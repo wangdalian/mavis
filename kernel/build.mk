@@ -1,0 +1,2 @@
+objs-y += main.o
+
