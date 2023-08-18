@@ -44,6 +44,11 @@ typedef enum {
     I32Const    = 0x41,
     LocalGet    = 0x20,
     LocalSet    = 0x21,
+    I32Add      = 0x6a,
+    I32Eqz      = 0x45,
+    I32Lt_s     = 0x48,
+    I32Ge_s     = 0x4e,
+    I32Rem_s    = 0x6f,
     End         = 0xb
 } Op;
 

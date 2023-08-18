@@ -1,6 +1,4 @@
 #include "node.h"
-#include "buffer.h"
-#include <stdint.h>
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));
@@ -75,16 +73,26 @@ Instr * parseInstr(Buffer *buf) {
                 .n = readU32(buf)
             };
             break;
+        
         case LocalGet:
             instr->localGet = (LocalGetInstr) {
                 .localIdx = readU32(buf)
             };
             break;
+        
         case LocalSet:
             instr->localSet = (LocalSetInstr) {
                 .localIdx = readU32(buf)
             };
             break;
+        
+        case I32Add:
+        case I32Eqz:
+        case I32Lt_s:
+        case I32Ge_s:
+        case I32Rem_s:
+            break;
+        
         case End:
             break;
         

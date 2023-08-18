@@ -67,6 +67,21 @@ static void printInstr(Instr *instr) {
         case LocalSet:
             printf("local.set %#x\n", instr->localSet.localIdx);
             break;
+        case I32Add:
+            puts("i32.add");
+            break;
+        case I32Eqz:
+            puts("i32.eqz");
+            break;
+        case I32Lt_s:
+            puts("i32.lt_s");
+            break;
+        case I32Ge_s:
+            puts("i32.ge_s");
+            break;
+        case I32Rem_s:
+            puts("i32.rem_s");
+            break;
     }   
 }
 
