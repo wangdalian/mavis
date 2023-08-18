@@ -1,4 +1,5 @@
 #include "node.h"
+#include "buffer.h"
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));
@@ -62,12 +63,32 @@ Section * parseFuncSection(Buffer *buf) {
     return sec;
 }
 
-Instr * parseI32Const(Buffer *buf) {
+Instr * parseInstr(Buffer *buf) {
     Instr *instr = malloc(sizeof(Instr));
-    *instr = (Instr) {
-        .op = I32Const,
-        .i32Const.n = readU32(buf)
-    };
+
+    instr->op = readByte(buf);
+
+    switch(instr->op) {
+        case I32Const:
+            instr->i32Const = (I32ConstInstr) {
+                .n = readU32(buf)
+            };
+            break;
+        case LocalGet:
+            instr->localGet = (LocalGetInstr) {
+                .localIdx = readU32(buf)
+            };
+            break;
+        case LocalSet:
+            instr->localSet = (LocalSetInstr) {
+                .localIdx = readU32(buf)
+            };
+            break;
+        case End:
+            break;
+        
+    }
+
     return instr;
 }
 
@@ -75,7 +96,7 @@ Locals * parseLocals(Buffer *buf) {
     Locals * locals = malloc(sizeof(Locals));
 
     *locals = (Locals) {
-        .val    = readU32(buf),
+        .num    = readU32(buf),
         .ty     = readByte(buf)
     };
     return locals;
@@ -92,32 +113,25 @@ Func * parseFunc(Buffer *buf) {
 
     LIST_INIT(&func->expr);
 
-    uint8_t op;
-
-    for(;;) {
-        op = readByte(buf);
-        switch(op) {
-            case I32Const: {
-                list_push_back(
-                    &func->expr, 
-                    &parseI32Const(buf)->link
-                );
-                break;
-            }
-            case End:
-               return func;
-        } 
+    while(!eof(buf)) {
+        list_push_back(
+                &func->expr, 
+                &parseInstr(buf)->link
+            );
     }
+
+    return func;
 }
 
 Code * parseCode(Buffer *buf) {
     Code *code = malloc(sizeof(Code));
 
-    *code = (Code) {
-        .size = readU32(buf),
-        .func = parseFunc(buf)
-    };
-    
+    code->size = readU32(buf);
+
+    Buffer * buffer = readBuffer(buf, code->size);
+
+    code->func = parseFunc(buffer);
+
     return code;   
 }
 
@@ -137,7 +151,7 @@ Section * parseCodeSection(Buffer *buf) {
 Section * parseSection(Buffer *buf) {
     uint8_t  id = readByte(buf);
     uint32_t size = readU32(buf);
-    
+
     switch(id) {
         case TYPE_SECTION_ID:
             return parseTypeSection(buf);

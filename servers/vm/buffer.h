@@ -17,4 +17,5 @@ uint8_t readByte(Buffer *buf);
 uint32_t readWord(Buffer *buf);
 uint32_t readU32(Buffer *buf);
 int32_t readI32(Buffer *buf);
+Buffer * readBuffer(Buffer *buf, int len);
 bool eof(Buffer *buf);

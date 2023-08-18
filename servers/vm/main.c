@@ -50,8 +50,8 @@ static void printFuncSection(Section *sec) {
 
 static void printLocal(Locals *local) {
     printf(
-        "val = %#x, type = %#x\n",
-        local->val,
+        "num = %#x, type = %#x\n",
+        local->num,
         local->ty
     );
 }
@@ -61,7 +61,13 @@ static void printInstr(Instr *instr) {
         case I32Const:
             printf("i32.const %#x\n", instr->i32Const.n);
             break;
-    }
+        case LocalGet:
+            printf("local.get %#x\n", instr->localGet.localIdx);
+            break;
+        case LocalSet:
+            printf("local.set %#x\n", instr->localSet.localIdx);
+            break;
+    }   
 }
 
 static void printFunc(Func *func) {

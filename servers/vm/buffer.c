@@ -50,6 +50,12 @@ int32_t readI32(Buffer *buf) {
     }
 }
 
+Buffer * readBuffer(Buffer *buf, int len) {
+    Buffer *new = newBuffer(buf->p + buf->cursor, len);
+    buf->cursor += len;
+    return new;
+}
+
 bool eof(Buffer *buf) {
     return buf->cursor == buf->len;
 }

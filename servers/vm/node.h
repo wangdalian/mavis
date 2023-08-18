@@ -35,13 +35,15 @@ typedef uint32_t TypeIdx;
 DEFINE_VECTOR(TypeIdx);
 
 typedef struct {
-    uint32_t val;
+    uint32_t num;
     uint8_t ty;
 } Locals;
 DEFINE_VECTOR(Locals);
 
 typedef enum {
     I32Const    = 0x41,
+    LocalGet    = 0x20,
+    LocalSet    = 0x21,
     End         = 0xb
 } Op;
 
@@ -50,10 +52,20 @@ typedef struct {
 }I32ConstInstr;
 
 typedef struct {
+    uint32_t    localIdx;
+} LocalGetInstr;
+
+typedef struct {
+    uint32_t    localIdx;
+} LocalSetInstr;
+
+typedef struct {
     list_elem_t link;
     uint8_t     op;
     union {
         I32ConstInstr i32Const;
+        LocalGetInstr localGet;
+        LocalSetInstr localSet;
     };
 } Instr;
 
