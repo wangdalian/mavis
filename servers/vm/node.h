@@ -80,9 +80,18 @@ typedef struct {
 } Code;
 DEFINE_VECTOR(Code);
 
+typedef uint8_t ExportDesc;
+typedef struct {
+    char *name;
+    ExportDesc exportDesc; 
+} Export;
+DEFINE_VECTOR(Export);
+
 #define TYPE_SECTION_ID         1   
 #define FUNC_SECTION_ID         3 
 #define CODE_SECTION_ID         10
+#define EXPORT_SECTION_ID       7
+
 typedef struct {
     list_elem_t link;
     int id;
@@ -90,6 +99,7 @@ typedef struct {
         FuncType_v  funcTypes;      // typesec
         TypeIdx_v   typeIdxes;      // funcsec
         Code_v      codes;          // codesec
+        Export_v    exports;        // exportsec
     };
 } Section;
 

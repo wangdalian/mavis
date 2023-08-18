@@ -93,6 +93,22 @@ static void printCodeSection(Section *sec) {
     }
 }
 
+
+static void printExport(Export *export) {
+    printf(
+        "name: %s, exportDesc: %#x\n",
+        export->name, 
+        export->exportDesc
+    );
+}
+
+static void printExportSection(Section *sec) {
+    puts("[Export Section]");
+    for(int i = 0; i < sec->exports.n; i++) {
+        printExport((*sec->exports.x)[i]);
+    }
+}
+
 int main(int argc, char *argv[]) {
     if(argc != 2) {
         puts("Usage: ./a.out <*.wasm>");
@@ -133,6 +149,9 @@ int main(int argc, char *argv[]) {
                 break;
             case FUNC_SECTION_ID:
                 printFuncSection(sec);
+                break;
+            case EXPORT_SECTION_ID:
+                printExportSection(sec);
                 break;
         }
     }
