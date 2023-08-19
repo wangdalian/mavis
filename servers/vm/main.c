@@ -9,7 +9,7 @@
 
 #include "buffer.h"
 #include "list.h"
-#include "node.h"
+#include "module.h"
 
 static void fatal(char *msg) {
     perror(msg);
@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
     if(head == MAP_FAILED) fatal("mmap");
 
     Buffer *buf = newBuffer(head, s.st_size);
-    Module *module = newModule(buf);
+    WasmModule *module = newWasmModule(buf);
     
     printf(
         "magic = %#x, version = %#x\n", 

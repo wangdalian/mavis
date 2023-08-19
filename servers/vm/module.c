@@ -1,4 +1,4 @@
-#include "node.h"
+#include "module.h"
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));
@@ -222,9 +222,9 @@ Section * parseSection(Buffer *buf) {
     return sec;
 }
 
-Module * newModule(Buffer *buf) {
-    Module *module = malloc(sizeof(Module));
-    *module = (Module) {
+WasmModule * newWasmModule(Buffer *buf) {
+    WasmModule *module = malloc(sizeof(WasmModule));
+    *module = (WasmModule) {
         .magic = readWord(buf),
         .version = readWord(buf)
     };

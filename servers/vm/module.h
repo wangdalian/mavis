@@ -146,8 +146,8 @@ typedef struct {
     uint32_t    magic;
     uint32_t    version;
     list_t      sections;
-} Module;
+} WasmModule;
 
-Module * newModule(Buffer *buf);
+WasmModule * newWasmModule(Buffer *buf);
 
 
