@@ -93,6 +93,24 @@ Instr * parseInstr(Buffer *buf) {
         case I32Rem_s:
             break;
         
+        case If: {
+            instr->If.blockType = readByte(buf);
+            LIST_INIT(&instr->If.thenInstrs);
+            Instr *i;
+            do {
+                i = parseInstr(buf);
+                list_push_back(&instr->If.thenInstrs, &i->link);
+            } while(i->op != End && i->op != Else);
+
+            if(i->op == Else) {
+                LIST_INIT(&instr->If.elseInstrs);
+                do {
+                    i =  parseInstr(buf);
+                    list_push_back(&instr->If.elseInstrs, &i->link);
+                } while(i->op != End);
+            }
+        }
+        
         case End:
             break;
         

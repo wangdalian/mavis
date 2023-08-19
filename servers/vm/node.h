@@ -49,6 +49,8 @@ typedef enum {
     I32Lt_s     = 0x48,
     I32Ge_s     = 0x4e,
     I32Rem_s    = 0x6f,
+    If          = 0x4,
+    Else        = 0x5,
     End         = 0xb
 } Op;
 
@@ -65,12 +67,19 @@ typedef struct {
 } LocalSetInstr;
 
 typedef struct {
+    uint8_t     blockType;
+    list_t      thenInstrs;
+    list_t      elseInstrs;
+} IfInstr;
+
+typedef struct {
     list_elem_t link;
     uint8_t     op;
     union {
-        I32ConstInstr i32Const;
-        LocalGetInstr localGet;
-        LocalSetInstr localSet;
+        I32ConstInstr   i32Const;
+        LocalGetInstr   localGet;
+        LocalSetInstr   localSet;
+        IfInstr         If;
     };
 } Instr;
 

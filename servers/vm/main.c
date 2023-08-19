@@ -82,6 +82,19 @@ static void printInstr(Instr *instr) {
         case I32Rem_s:
             puts("i32.rem_s");
             break;
+        case If:
+            printf("if %#x\n", instr->If.blockType);
+            LIST_FOR_EACH(i, &instr->If.thenInstrs, Instr, link) {
+                printInstr(i);
+            }
+            puts("else");
+            LIST_FOR_EACH(i, &instr->If.elseInstrs, Instr, link) {
+                printInstr(i);
+            }
+            break;
+        case End:
+            puts("end");
+            break;
     }   
 }
 
