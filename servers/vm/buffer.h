@@ -5,6 +5,7 @@
 #include <stdio.h> 
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 typedef struct {
     int cursor;
@@ -18,4 +19,5 @@ uint32_t readWord(Buffer *buf);
 uint32_t readU32(Buffer *buf);
 int32_t readI32(Buffer *buf);
 Buffer * readBuffer(Buffer *buf, int len);
+char * readName(Buffer *buf);
 bool eof(Buffer *buf);

@@ -1,5 +1,4 @@
 #include "node.h"
-#include "buffer.h"
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));
@@ -200,13 +199,8 @@ Section * parseCodeSection(Buffer *buf) {
 
 Export * parseExport(Buffer *buf) {
     Export *export = malloc(sizeof(Export));
-    
-    uint32_t n = readU32(buf);
-    export->name = malloc(sizeof(char) * (n + 1));
-    for(uint32_t i = 0; i < n; i++)
-        export->name[i] = readByte(buf);
-    export->name[n] = '\0';
 
+    export->name = readName(buf);
     export->exportDesc = readU32(buf);
 
     return export;

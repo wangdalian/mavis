@@ -50,6 +50,15 @@ int32_t readI32(Buffer *buf) {
     }
 }
 
+char * readName(Buffer *buf) {
+    uint32_t n = readU32(buf);
+    char *name = malloc(sizeof(char) * (n + 1));
+    memcpy(name, buf->p + buf->cursor, n);
+    name[n] = '\0';
+    buf->cursor += n;
+    return name;
+}
+
 Buffer * readBuffer(Buffer *buf, int len) {
     Buffer *new = newBuffer(buf->p + buf->cursor, len);
     buf->cursor += len;
