@@ -1,5 +1,4 @@
 #include "node.h"
-#include "buffer.h"
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));
@@ -31,36 +30,10 @@ FuncType * parseFuncType(Buffer *buf) {
     return funcTy;
 }
 
-Section * parseTypeSection(Buffer *buf) {
-    Section *sec = malloc(sizeof(Section));
-    sec->id = TYPE_SECTION_ID;
-
-    sec->funcTypes.n = readU32(buf);
-    sec->funcTypes.x = malloc(sizeof(FuncType *) * sec->funcTypes.n);
-
-    for(int i = 0; i < sec->funcTypes.n; i++)
-       (*sec->funcTypes.x)[i] = parseFuncType(buf);
-
-    return sec;
-}
-
 TypeIdx * parseTypeIdx(Buffer *buf) {
     TypeIdx *typeIdx = malloc(sizeof(TypeIdx));
     *typeIdx = readU32(buf);
     return typeIdx;
-}
-
-Section * parseFuncSection(Buffer *buf) {
-    Section *sec = malloc(sizeof(Section));
-    sec->id = FUNC_SECTION_ID;
-
-    sec->typeIdxes.n = readU32(buf);
-    sec->typeIdxes.x = malloc(sizeof(TypeIdx *) * sec->typeIdxes.n);
-
-    for(int i = 0; i < sec->typeIdxes.n; i++)
-        (*sec->typeIdxes.x)[i] = parseTypeIdx(buf);
-
-    return sec;
 }
 
 Instr * parseInstr(Buffer *buf) {
@@ -185,19 +158,6 @@ Code * parseCode(Buffer *buf) {
     return code;   
 }
 
-Section * parseCodeSection(Buffer *buf) {
-    Section *sec = malloc(sizeof(Section));
-    sec->id = CODE_SECTION_ID;
-
-    sec->codes.n = readU32(buf);
-    sec->codes.x = malloc(sizeof(Code *) * sec->codes.n);
-
-    for(int i = 0; i < sec->codes.n; i++)
-       (*sec->codes.x)[i] = parseCode(buf);
-
-    return sec;
-}
-
 ExportDesc * parseExportDesc(Buffer *buf) {
     ExportDesc *d = malloc(sizeof(ExportDesc));
     *d = (ExportDesc) {
@@ -216,34 +176,50 @@ Export * parseExport(Buffer *buf) {
     return export;
 }
 
-Section * parseExportSection(Buffer *buf) {
-    Section *sec = malloc(sizeof(Section));
-    sec->id = EXPORT_SECTION_ID;
-
-    sec->exports.n = readU32(buf);
-    sec->exports.x = malloc(sizeof(Export * ) * sec->exports.n);
-
-    for(int i = 0; i < sec->exports.n; i++)
-        (*sec->exports.x)[i] = parseExport(buf);
-
-    return sec;
-}
-
 Section * parseSection(Buffer *buf) {
-    uint8_t  id = readByte(buf);
+    Section *sec = malloc(sizeof(Section));
+    sec->id = readByte(buf);
     uint32_t size = readU32(buf);
 
-    switch(id) {
+    switch(sec->id) {
         case TYPE_SECTION_ID:
-            return parseTypeSection(buf);
+            sec->funcTypes.n = readU32(buf);
+            sec->funcTypes.x = malloc(sizeof(FuncType *) * sec->funcTypes.n);
+
+            for(int i = 0; i < sec->funcTypes.n; i++)
+                (*sec->funcTypes.x)[i] = parseFuncType(buf);
+            
+            break;
+        
         case FUNC_SECTION_ID:
-            return parseFuncSection(buf);
+            sec->typeIdxes.n = readU32(buf);
+            sec->typeIdxes.x = malloc(sizeof(TypeIdx *) * sec->typeIdxes.n);
+
+            for(int i = 0; i < sec->typeIdxes.n; i++)
+                (*sec->typeIdxes.x)[i] = parseTypeIdx(buf);
+
+            break;
+        
         case CODE_SECTION_ID:
-            return parseCodeSection(buf);
+            sec->codes.n = readU32(buf);
+            sec->codes.x = malloc(sizeof(Code *) * sec->codes.n);
+
+            for(int i = 0; i < sec->codes.n; i++)
+                (*sec->codes.x)[i] = parseCode(buf);
+            
+            break;
+        
         case EXPORT_SECTION_ID:
-            return parseExportSection(buf);
+            sec->exports.n = readU32(buf);
+            sec->exports.x = malloc(sizeof(Export * ) * sec->exports.n);
+
+            for(int i = 0; i < sec->exports.n; i++)
+                (*sec->exports.x)[i] = parseExport(buf);
+
+            break;
     }
-    return NULL;
+
+    return sec;
 }
 
 Module * newModule(Buffer *buf) {
