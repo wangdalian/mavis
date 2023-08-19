@@ -1,4 +1,5 @@
 #include "node.h"
+#include "buffer.h"
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));
@@ -109,7 +110,29 @@ Instr * parseInstr(Buffer *buf) {
                     list_push_back(&instr->If.elseInstrs, &i->link);
                 } while(i->op != End);
             }
+            break;
         }
+
+        case Block:
+        case Loop: {
+            instr->block.blockType = readByte(buf);
+            LIST_INIT(&instr->block.instrs);
+            Instr *i;
+            do {
+                i = parseInstr(buf);
+                list_push_back(&instr->block.instrs, &i->link);
+            } while(i->op != End);
+            break;
+        }
+        
+        case Br:
+        case BrIf:
+            instr->br.labelIdx = readU32(buf);
+            break;
+        
+        case Call:
+            instr->call.funcIdx = readU32(buf);
+            break;
         
         case End:
             break;

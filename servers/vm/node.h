@@ -51,6 +51,11 @@ typedef enum {
     I32Rem_s    = 0x6f,
     If          = 0x4,
     Else        = 0x5,
+    Block       = 0x2,
+    Loop        = 0x3,
+    Br          = 0xc,
+    BrIf        = 0xd,
+    Call        = 0x10,
     End         = 0xb
 } Op;
 
@@ -73,6 +78,19 @@ typedef struct {
 } IfInstr;
 
 typedef struct {
+    uint8_t     blockType;
+    list_t      instrs;
+} BlockInstr;
+
+typedef struct {
+    uint32_t    labelIdx;
+} BrInstr;
+
+typedef struct {
+    uint32_t    funcIdx;
+} CallInstr;
+
+typedef struct {
     list_elem_t link;
     uint8_t     op;
     union {
@@ -80,6 +98,9 @@ typedef struct {
         LocalGetInstr   localGet;
         LocalSetInstr   localSet;
         IfInstr         If;
+        BlockInstr      block;
+        BrInstr         br;
+        CallInstr       call;
     };
 } Instr;
 

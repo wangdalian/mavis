@@ -92,6 +92,24 @@ static void printInstr(Instr *instr) {
                 printInstr(i);
             }
             break;
+        case Block:
+        case Loop:
+            printf("%s\n", instr->op == Block? "block" : "loop");
+            LIST_FOR_EACH(i, &instr->block.instrs, Instr, link) {
+                printInstr(i);
+            }
+            break;
+        case Br:
+        case BrIf:
+            printf(
+                "%s %#x\n", 
+                instr->op == Br? "br" : "br_if", 
+                instr->br.labelIdx
+            );
+            break;
+        case Call:
+            printf("call %#x\n", instr->call.funcIdx);
+            break;
         case End:
             puts("end");
             break;
