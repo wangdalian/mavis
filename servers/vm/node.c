@@ -1,4 +1,5 @@
 #include "node.h"
+#include "buffer.h"
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));
@@ -197,11 +198,20 @@ Section * parseCodeSection(Buffer *buf) {
     return sec;
 }
 
+ExportDesc * parseExportDesc(Buffer *buf) {
+    ExportDesc *d = malloc(sizeof(ExportDesc));
+    *d = (ExportDesc) {
+        .kind   = readByte(buf),
+        .idx    = readU32(buf)
+    };
+    return d;
+}
+
 Export * parseExport(Buffer *buf) {
     Export *export = malloc(sizeof(Export));
 
     export->name = readName(buf);
-    export->exportDesc = readU32(buf);
+    export->exportDesc = parseExportDesc(buf);
 
     return export;
 }
@@ -222,17 +232,16 @@ Section * parseExportSection(Buffer *buf) {
 Section * parseSection(Buffer *buf) {
     uint8_t  id = readByte(buf);
     uint32_t size = readU32(buf);
-    Buffer *buffer = readBuffer(buf, size);
 
     switch(id) {
         case TYPE_SECTION_ID:
-            return parseTypeSection(buffer);
+            return parseTypeSection(buf);
         case FUNC_SECTION_ID:
-            return parseFuncSection(buffer);
+            return parseFuncSection(buf);
         case CODE_SECTION_ID:
-            return parseCodeSection(buffer);
+            return parseCodeSection(buf);
         case EXPORT_SECTION_ID:
-            return parseExportSection(buffer);
+            return parseExportSection(buf);
     }
     return NULL;
 }

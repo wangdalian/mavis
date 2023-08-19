@@ -115,10 +115,14 @@ typedef struct {
 } Code;
 DEFINE_VECTOR(Code);
 
-typedef uint8_t ExportDesc;
+typedef struct {
+    uint8_t     kind;
+    uint32_t    idx;   
+} ExportDesc;
+
 typedef struct {
     char *name;
-    ExportDesc exportDesc; 
+    ExportDesc * exportDesc; 
 } Export;
 DEFINE_VECTOR(Export);
 

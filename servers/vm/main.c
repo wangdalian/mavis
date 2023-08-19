@@ -139,12 +139,12 @@ static void printCodeSection(Section *sec) {
     }
 }
 
-
 static void printExport(Export *export) {
     printf(
-        "name: %s, exportDesc: %#x\n",
+        "name: %s, exportDesc: kind: %#x, idx: %#x\n",
         export->name, 
-        export->exportDesc
+        export->exportDesc->kind,
+        export->exportDesc->idx
     );
 }
 
