@@ -8,7 +8,7 @@
 #define DEFINE_VECTOR(elem_ty)      \
 typedef struct {                    \
     int n;                          \
-    elem_ty * (*x)[];               \
+    elem_ty * x[];                  \
 } elem_ty##_v;
 
 // num type
@@ -105,8 +105,8 @@ typedef struct {
 } Instr;
 
 typedef struct {
-    Locals_v    locals;
     list_t      expr;
+    Locals_v    locals;
 } Func;
 
 typedef struct {

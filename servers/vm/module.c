@@ -7,13 +7,14 @@ ValType * parseValType(Buffer *buf) {
 }
 
 ResultType * parseResultType(Buffer *buf) {
-    ResultType *retTy = malloc(sizeof(ResultType));
+    uint32_t n = readU32_LEB128(buf);
 
-    retTy->n = readU32_LEB128(buf);
-    retTy->x = malloc(sizeof(ValType *) * retTy->n);
+    ResultType *retTy = malloc(sizeof(ResultType) + sizeof(ValType *) * n);
+
+    retTy->n = n;
 
     for(int i = 0; i < retTy->n; i++)
-        (*retTy->x)[i] = parseValType(buf);
+        retTy->x[i] = parseValType(buf);
     return retTy;
 }
 
@@ -126,13 +127,14 @@ Locals * parseLocals(Buffer *buf) {
 }
 
 Func * parseFunc(Buffer *buf) {
-    Func *func = malloc(sizeof(Func));
+    uint32_t n =  readU32_LEB128(buf);
 
-    func->locals.n = readU32_LEB128(buf);
-    func->locals.x = malloc(sizeof(Locals *) * func->locals.n);
+    Func *func = malloc(sizeof(Func) + sizeof(Locals *) * n);
+
+    func->locals.n = n;
 
     for(int i = 0; i < func->locals.n; i++)
-        (*func->locals.x)[i] = parseLocals(buf);
+        func->locals.x[i] = parseLocals(buf);
 
     LIST_INIT(&func->expr);
 
@@ -176,50 +178,85 @@ Export * parseExport(Buffer *buf) {
     return export;
 }
 
-Section * parseSection(Buffer *buf) {
-    Section *sec = malloc(sizeof(Section));
-    sec->id = readByte(buf);
-    uint32_t size = readU32_LEB128(buf);
+Section * parseTypeSection(Buffer *buf) {
+    uint32_t n = readU32_LEB128(buf);
 
-    switch(sec->id) {
-        case TYPE_SECTION_ID:
-            sec->funcTypes.n = readU32_LEB128(buf);
-            sec->funcTypes.x = malloc(sizeof(FuncType *) * sec->funcTypes.n);
+    Section *sec = malloc(sizeof(Section) + sizeof(FuncType *) * n);
+    
+    sec->id = TYPE_SECTION_ID;
+    sec->funcTypes.n = n;
 
-            for(int i = 0; i < sec->funcTypes.n; i++)
-                (*sec->funcTypes.x)[i] = parseFuncType(buf);
-            
-            break;
-        
-        case FUNC_SECTION_ID:
-            sec->typeIdxes.n = readU32_LEB128(buf);
-            sec->typeIdxes.x = malloc(sizeof(TypeIdx *) * sec->typeIdxes.n);
-
-            for(int i = 0; i < sec->typeIdxes.n; i++)
-                (*sec->typeIdxes.x)[i] = parseTypeIdx(buf);
-
-            break;
-        
-        case CODE_SECTION_ID:
-            sec->codes.n = readU32_LEB128(buf);
-            sec->codes.x = malloc(sizeof(Code *) * sec->codes.n);
-
-            for(int i = 0; i < sec->codes.n; i++)
-                (*sec->codes.x)[i] = parseCode(buf);
-            
-            break;
-        
-        case EXPORT_SECTION_ID:
-            sec->exports.n = readU32_LEB128(buf);
-            sec->exports.x = malloc(sizeof(Export * ) * sec->exports.n);
-
-            for(int i = 0; i < sec->exports.n; i++)
-                (*sec->exports.x)[i] = parseExport(buf);
-
-            break;
+    for(int i = 0; i < sec->funcTypes.n; i++) {
+        sec->funcTypes.x[i] = parseFuncType(buf);
     }
 
     return sec;
+}
+
+Section * parseFuncSection(Buffer *buf) {
+    uint32_t n = readU32_LEB128(buf);
+
+    Section *sec = malloc(sizeof(Section) + sizeof(TypeIdx *) * n);
+
+    sec->id = FUNC_SECTION_ID;
+    sec->typeIdxes.n = n;
+
+    for(int i = 0; i < sec->typeIdxes.n; i++) {
+        sec->typeIdxes.x[i] = parseTypeIdx(buf);
+    }
+
+    return sec;
+}
+
+Section * parseCodeSection(Buffer *buf) {
+    uint32_t n = readU32_LEB128(buf);
+
+    Section *sec = malloc(sizeof(Section) + sizeof(Code *) * n);
+
+    sec->id = CODE_SECTION_ID;
+    sec->codes.n = n;
+
+    for(int i = 0; i < sec->typeIdxes.n; i++) {
+        sec->codes.x[i] = parseCode(buf);
+    }
+
+    return sec;
+}
+
+Section * parseExportSection(Buffer *buf) {
+    uint32_t n = readU32_LEB128(buf);
+
+    Section *sec = malloc(sizeof(Section) + sizeof(Export *) * n);
+
+    sec->id = EXPORT_SECTION_ID;
+    sec->exports.n = n;
+
+    for(int i = 0; i < sec->exports.n; i++) {
+        sec->exports.x[i] = parseExport(buf);
+    }
+
+    return sec;
+}
+
+Section * parseSection(Buffer *buf) {
+    uint8_t id  = readByte(buf);
+    uint32_t size = readU32_LEB128(buf);
+
+    switch(id) {
+        case TYPE_SECTION_ID:
+            return parseTypeSection(buf);
+        
+        case FUNC_SECTION_ID:
+            return parseFuncSection(buf);
+        
+        case CODE_SECTION_ID:
+            return parseCodeSection(buf);
+        
+        case EXPORT_SECTION_ID:
+            return parseExportSection(buf);
+    }
+
+    return NULL;
 }
 
 WasmModule * newWasmModule(Buffer *buf) {

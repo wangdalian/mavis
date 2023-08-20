@@ -18,7 +18,7 @@ static void fatal(char *msg) {
 
 static void printResultType(ResultType *v) {
     for(int i = 0; i < v->n; i++)
-        printf("%#x ", *(*v->x)[i]);
+        printf("%#x ", *v->x[i]);
 
     if(v->n)
         putchar('\n');
@@ -34,7 +34,7 @@ static void printFuncType(FuncType *funcType) {
 static void printTypeSection(Section *sec) {
     puts("[Type Section]");
     for(int i = 0; i < sec->funcTypes.n; i++) {
-        printFuncType((*sec->funcTypes.x)[i]);
+        printFuncType(sec->funcTypes.x[i]);
     }
 }
 
@@ -42,7 +42,7 @@ static void printFuncSection(Section *sec) {
     puts("[Func Section]");
 
     for(int i = 0; i < sec->typeIdxes.n; i++) {
-        printf("%#x ", *(*sec->typeIdxes.x)[i]);
+        printf("%#x ", *sec->typeIdxes.x[i]);
     }
 
     putchar('\n');
@@ -118,7 +118,7 @@ static void printInstr(Instr *instr) {
 
 static void printFunc(Func *func) {
     for(int i = 0; i < func->locals.n; i++) {
-        printLocal((*func->locals.x)[i]);
+        printLocal(func->locals.x[i]);
     }
 
     LIST_FOR_EACH(instr, &func->expr, Instr, link) {
@@ -135,7 +135,7 @@ static void printCodeSection(Section *sec) {
     puts("[Code Section]");
 
     for(int i = 0; i < sec->codes.n; i++) {
-        printCode((*sec->codes.x)[i]);
+        printCode(sec->codes.x[i]);
     }
 }
 
@@ -151,7 +151,7 @@ static void printExport(Export *export) {
 static void printExportSection(Section *sec) {
     puts("[Export Section]");
     for(int i = 0; i < sec->exports.n; i++) {
-        printExport((*sec->exports.x)[i]);
+        printExport(sec->exports.x[i]);
     }
 }
 
