@@ -14,10 +14,16 @@ Buffer *newBuffer(uint8_t *p, int len) {
 }
 
 uint8_t readByte(Buffer *buf) {
+    if(buf->cursor + 1 > buf->len)
+        return 0;
+
     return buf->p[buf->cursor++];
 }
 
 uint32_t readWord(Buffer *buf) {
+    if(buf->cursor + 4 > buf->len)
+        return 0;
+    
     uint32_t r = *(uint32_t *)&buf->p[buf->cursor];
     buf->cursor += 4;
     return r;
@@ -53,13 +59,18 @@ int32_t readI32(Buffer *buf) {
 char * readName(Buffer *buf) {
     uint32_t n = readU32(buf);
     char *name = malloc(sizeof(char) * (n + 1));
-    memcpy(name, buf->p + buf->cursor, n);
+
+    for(uint32_t i = 0; i < n; i++) {
+        name[i] = readByte(buf);
+    }
     name[n] = '\0';
-    buf->cursor += n;
     return name;
 }
 
 Buffer * readBuffer(Buffer *buf, int len) {
+    if(buf->cursor + len > buf->len)
+        return NULL;
+
     Buffer *new = newBuffer(buf->p + buf->cursor, len);
     buf->cursor += len;
     return new;
