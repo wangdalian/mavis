@@ -10,6 +10,7 @@
 #include "buffer.h"
 #include "list.h"
 #include "module.h"
+#include "instance.h"
 
 static void fatal(char *msg) {
     perror(msg);
@@ -56,7 +57,7 @@ static void printLocal(Locals *local) {
     );
 }
 
-static void printInstr(Instr *instr) {
+void printInstr(Instr *instr) {
     switch(instr->op) {
         case I32Const:
             printf("i32.const %#x\n", instr->i32Const.n);
@@ -201,6 +202,9 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
+
+    int32_t ret = call(module, "add42", 10);
+    printf("[+] add42(10) = %d\n", ret);
 
     munmap(head, s.st_size);
     close(fd);

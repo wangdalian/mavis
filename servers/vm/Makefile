@@ -1,6 +1,6 @@
 CC = clang
 CFGLAGS = -Wall -Wextra
-OBJS = buffer.o main.o module.o list.o
+OBJS = buffer.o main.o module.o list.o instance.o
 
 .PHONY: build
 build: vm.elf

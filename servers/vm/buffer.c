@@ -41,6 +41,15 @@ uint32_t readU32(Buffer *buf) {
     return r;
 }
 
+int32_t readI32(Buffer *buf) {
+    if(buf->cursor + 4 > buf->len)
+        return 0;
+    
+    int32_t r = *(int32_t *)&buf->p[buf->cursor];
+    buf->cursor += 4;
+    return r;
+}
+
 // LEB128(Little Endian Base 128)
 uint32_t readU32_LEB128(Buffer *buf) {
     uint32_t result = 0, shift = 0;
