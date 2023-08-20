@@ -13,6 +13,18 @@ Buffer *newBuffer(uint8_t *p, int len) {
     return buf;
 }
 
+Buffer *newStack(uint8_t *p, int len) {
+    Buffer *stack = malloc(sizeof(Buffer));
+
+    *stack = (Buffer){
+        .cursor = len, 
+        .len = len,
+        .p = p
+    };
+
+    return stack;
+}
+
 uint8_t readByte(Buffer *buf) {
     if(buf->cursor + 1 > buf->len)
         return 0;
@@ -20,7 +32,7 @@ uint8_t readByte(Buffer *buf) {
     return buf->p[buf->cursor++];
 }
 
-uint32_t readWord(Buffer *buf) {
+uint32_t readU32(Buffer *buf) {
     if(buf->cursor + 4 > buf->len)
         return 0;
     
@@ -30,7 +42,7 @@ uint32_t readWord(Buffer *buf) {
 }
 
 // LEB128(Little Endian Base 128)
-uint32_t readU32(Buffer *buf) {
+uint32_t readU32_LEB128(Buffer *buf) {
     uint32_t result = 0, shift = 0;
     while(1) {
         uint8_t byte = readByte(buf); 
@@ -41,7 +53,7 @@ uint32_t readU32(Buffer *buf) {
     }
 }
 
-int32_t readI32(Buffer *buf) {
+int32_t readI32_LEB128(Buffer *buf) {
     int32_t result = 0, shift = 0;
     while(1) {
         uint8_t byte = readByte(buf);
@@ -57,7 +69,7 @@ int32_t readI32(Buffer *buf) {
 }
 
 char * readName(Buffer *buf) {
-    uint32_t n = readU32(buf);
+    uint32_t n = readU32_LEB128(buf);
     char *name = malloc(sizeof(char) * (n + 1));
 
     for(uint32_t i = 0; i < n; i++) {
@@ -78,4 +90,32 @@ Buffer * readBuffer(Buffer *buf, int len) {
 
 bool eof(Buffer *buf) {
     return buf->cursor == buf->len;
+}
+
+// We no longer need to use LSB128 at runtime.
+uint8_t writeByte(Buffer *buf, uint8_t val) {
+    if(buf->cursor - 1 < 0)
+        return 0;
+
+    buf->p[--buf->cursor] = val;
+    return val;
+}
+
+uint32_t writeU32(Buffer *buf, uint32_t val) {
+    if(buf->cursor - 4 < 0)
+        return 0;
+
+    buf->cursor -= 4;
+    *(uint32_t *)&buf->p[buf->cursor] = val;
+    return val;
+}
+
+int32_t writeI32(Buffer *buf, int32_t val) {
+    if(buf->cursor - 4 < 0)
+        return 0;
+
+    buf->cursor -= 4;
+    *(int32_t *)&buf->p[buf->cursor] = val;
+    buf->p[buf->cursor] = val;
+    return val;
 }
