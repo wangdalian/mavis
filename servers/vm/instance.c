@@ -102,6 +102,31 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
                 writeI32(ctx->stack, ret);
             return LIST_CONTAINER(instr->link.next, Instr , link);
         }
+        case If: {
+            int32_t cond = readI32(ctx->stack);
+            if(cond) {
+                Instr *i = LIST_CONTAINER(
+                    list_head(&instr->If.thenInstrs),
+                    Instr,
+                    link
+                );
+
+                while(i) {
+                    i = invokeI(ctx, func, i);
+                }
+            } else {
+                Instr *i = LIST_CONTAINER(
+                    list_head(&instr->If.elseInstrs),
+                    Instr,
+                    link
+                );
+
+                while(i) {
+                    i = invokeI(ctx, func, i);
+                }
+            }
+            return LIST_CONTAINER(instr->link.next, Instr , link);
+        }
         case End:
             return LIST_CONTAINER(instr->link.next, Instr , link);
     }
