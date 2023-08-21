@@ -3,6 +3,7 @@
 #include "module.h"
 #include "buffer.h"
 #include "list.h"
+#include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
 
@@ -20,9 +21,17 @@ typedef struct {
     LocalValue  *locals[];
 } WasmFunc;
 
-typedef struct Instance{
-    Buffer *stack;
-    WasmFunc *funcs[];
+typedef struct {
+    Buffer      *stack;
+    WasmFunc    *funcs[];
+} Context;
+
+typedef struct Instance {
+    Section     *typesec;
+    Section     *funcsec;
+    Section     *codesec;
+    Section     *exportsec;
+    Context     ctx;
 } Instance;
 
 Instance *instantiate(WasmModule *m);

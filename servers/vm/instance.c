@@ -10,18 +10,9 @@ LocalValue *createLocalValue(ValType ty) {
     return val;
 }
 
-WasmFunc *createWasmFunc(WasmModule *m, int idx) {
-    Section *typesec = NULL, *codesec = NULL;
-
-    LIST_FOR_EACH(sec, &m->sections, Section, link) {
-        if(sec->id == TYPE_SECTION_ID)
-            typesec = sec;
-        if(sec->id == CODE_SECTION_ID)
-            codesec = sec;
-    }
-
-    Func *f = codesec->codes.x[idx]->func;
-    FuncType *ty = typesec->funcTypes.x[idx];
+WasmFunc *createWasmFunc(Instance *instance, int idx) {
+    Func *f = instance->codesec->codes.x[idx]->func;
+    FuncType *ty = instance->typesec->funcTypes.x[idx];
 
     // count local variables
     int num_params = ty->rt1->n;
@@ -52,30 +43,30 @@ WasmFunc *createWasmFunc(WasmModule *m, int idx) {
     return wasmf;
 }
 
-int32_t invokeF(Instance *instance, WasmFunc *f);
+int32_t invokeF(Context *instance, WasmFunc *f);
 
-void invokeI(Instance *instance, WasmFunc *func, Instr *instr) {
+void invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
     switch(instr->op) {
         case I32Const:
-            writeI32(instance->stack, instr->i32Const.n);
+            writeI32(ctx->stack, instr->i32Const.n);
             break;
         case I32Add: {
-            int32_t lhs = readI32(instance->stack);
-            int32_t rhs = readI32(instance->stack);
-            writeI32(instance->stack, lhs + rhs);
+            int32_t lhs = readI32(ctx->stack);
+            int32_t rhs = readI32(ctx->stack);
+            writeI32(ctx->stack, lhs + rhs);
             break;
         }
         case LocalGet: {
             writeI32(
-                instance->stack, 
+                ctx->stack, 
                 func->locals[instr->localGet.localIdx]->val.i32
             );
             break;
         }
         case Call: {
-            int32_t ret = invokeF(instance, instance->funcs[instr->call.funcIdx]);
+            int32_t ret = invokeF(ctx, ctx->funcs[instr->call.funcIdx]);
             if(ret)
-                writeI32(instance->stack, ret);
+                writeI32(ctx->stack, ret);
             break;
         }
         case End:
@@ -84,47 +75,65 @@ void invokeI(Instance *instance, WasmFunc *func, Instr *instr) {
 }
 
 // todo: fix type
-int32_t invokeF(Instance *instance, WasmFunc *f) {
+int32_t invokeF(Context *ctx, WasmFunc *f) {
     for(int i = 0; i < f->ty->rt1->n; i++) {
         // todo: validate type
-        f->locals[i]->val.i32 = readI32(instance->stack);
+        f->locals[i]->val.i32 = readI32(ctx->stack);
     }
 
     LIST_FOR_EACH(instr, f->codes, Instr, link) {
-        invokeI(instance, f, instr);
+        invokeI(ctx, f, instr);
     }
 
     int32_t ret = 0;
 
     if(f->ty->rt2->n)
-        ret = readI32(instance->stack);
+        ret = readI32(ctx->stack);
 
     return ret;
 }
 
 Instance *instantiate(WasmModule *m) {
-    Section *funcsec = NULL;
-
+    // find sections
+    Section *typesec = NULL, *funcsec = NULL, \
+            *codesec = NULL, *exportsec = NULL;
+    
     LIST_FOR_EACH(sec, &m->sections, Section, link) {
-        if(sec->id == FUNC_SECTION_ID) {
-            funcsec = sec;
-            break;
+        switch(sec->id) {
+            case TYPE_SECTION_ID:
+                typesec = sec;
+                break;
+            case FUNC_SECTION_ID:
+                funcsec = sec;
+                break;
+            case CODE_SECTION_ID:
+                codesec = sec;
+                break;
+            case EXPORT_SECTION_ID:
+                exportsec = sec;
         }
     }
+
     if(!funcsec)
         return NULL;
 
     int num_funcs = funcsec->typeIdxes.n;
 
     Instance *instance = malloc(sizeof(Instance) + sizeof(WasmFunc *) * num_funcs);
+    *instance = (Instance) {
+        .typesec    = typesec,
+        .funcsec    = funcsec,
+        .codesec    = codesec,
+        .exportsec  = exportsec
+    };
 
-    // create stack
+    // create context
     uint8_t *buf = malloc(4096);
-    instance->stack = newStack(buf, 4096);
+    instance->ctx.stack = newStack(buf, 4096);
 
     // create functions
     for(int i = 0; i < num_funcs; i++) {
-        instance->funcs[i] = createWasmFunc(m, i);
+        instance->ctx.funcs[i] = createWasmFunc(instance, i);
     }
 
     return instance;
@@ -160,7 +169,7 @@ int32_t call(WasmModule *m, char *name, ...) {
         e = export->exports.x[i];
         if(strcmp(e->name, name) == 0) {
             assert(e->exportDesc->kind == 0);
-            f = instance->funcs[export->exports.x[i]->exportDesc->idx];
+            f = instance->ctx.funcs[export->exports.x[i]->exportDesc->idx];
             break;
         }
     }
@@ -174,7 +183,7 @@ int32_t call(WasmModule *m, char *name, ...) {
     for(int i = 0; i < f->ty->rt1->n; i++) {
         switch(*f->ty->rt1->x[i]) {
             case I32:
-                writeI32(instance->stack, va_arg(ap, int32_t));
+                writeI32(instance->ctx.stack, va_arg(ap, int32_t));
                 break;
             
             // todo: add type
@@ -182,5 +191,5 @@ int32_t call(WasmModule *m, char *name, ...) {
     }
 
     va_end(ap);
-    return invokeF(instance, f); 
+    return invokeF(&instance->ctx, f); 
 }
