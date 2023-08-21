@@ -47,6 +47,47 @@ WasmFunc *createWasmFunc(Instance *instance, int idx) {
     return wasmf;
 }
 
+Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr);
+
+Instr * branchIn(Context *ctx, WasmFunc *func, int idx) {
+    // todo: check block`s existence
+    // todo: support if block?
+    list_elem_t *block = list_tail(&ctx->blocks);
+    while(idx) {
+        block = block->prev;
+        idx--;
+    }
+
+    Instr *instr = LIST_CONTAINER(block, Instr, link_block);
+
+    switch(instr->op) {
+        case Loop:
+            return LIST_CONTAINER(
+                list_head(&instr->block.instrs),
+                Instr,
+                link
+            );
+        case Block: {
+            // end instruction expected
+            invokeI(
+                ctx, func, 
+                LIST_CONTAINER(
+                    list_tail(&instr->block.instrs), Instr, link
+                )
+            );
+
+            return LIST_CONTAINER(
+                instr->link.next,
+                Instr,
+                link
+            );
+        }
+    }
+
+    // unexpected block
+    return NULL;
+}
+
 int32_t invokeF(Context *instance, WasmFunc *f);
 
 Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
@@ -127,7 +168,24 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
             }
             return LIST_CONTAINER(instr->link.next, Instr , link);
         }
+        case Block:
+        case Loop:
+            list_push_back(&ctx->blocks, &instr->link_block);
+            return LIST_CONTAINER(
+                list_head(&instr->block.instrs),
+                Instr,
+                link
+            );
+        case Br:
+            return branchIn(ctx, func, instr->br.labelIdx);
+        case BrIf: {
+            int32_t cond = readI32(ctx->stack);
+            if(cond)
+                return branchIn(ctx, func, instr->br.labelIdx);
+            return LIST_CONTAINER(instr->link.next, Instr , link);
+        }
         case End:
+            list_pop_tail(&ctx->blocks);
             return LIST_CONTAINER(instr->link.next, Instr , link);
     }
 
@@ -192,6 +250,7 @@ Instance *instantiate(WasmModule *m) {
     // create context
     uint8_t *buf = malloc(4096);
     instance->ctx.stack = newStack(buf, 4096);
+    LIST_INIT(&instance->ctx.blocks);
 
     // create functions
     for(int i = 0; i < num_funcs; i++) {

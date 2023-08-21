@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    int32_t ret = call(module, "ge10", 11);
+    int32_t ret = call(module, "loop");
     printf("ret = %d\n", ret);
 
     munmap(head, s.st_size);

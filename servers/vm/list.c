@@ -20,11 +20,24 @@ list_elem_t * list_head(list_t *list) {
     return head;
 }
 
-list_elem_t *list_tail(list *list) {
+list_elem_t *list_tail(list_t *list) {
     list_t *tail = list->prev;
 
     if(tail == list)
         return NULL;
+
+    return tail;
+}
+
+list_elem_t *list_pop_tail(list_t *list) {
+    list_t *tail = list->prev;
+
+    if(tail == list)
+        return NULL;
+    
+    // delete element
+    tail->prev->next = tail->next;
+    list->prev = tail->prev;
 
     return tail;
 }

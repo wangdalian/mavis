@@ -92,6 +92,7 @@ typedef struct {
 
 typedef struct {
     list_elem_t link;
+    list_elem_t link_block; //used to link block instructions
     uint8_t     op;
     union {
         I32ConstInstr   i32Const;
