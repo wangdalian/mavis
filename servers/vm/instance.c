@@ -1,4 +1,8 @@
 #include "instance.h"
+#include "buffer.h"
+#include "list.h"
+#include "module.h"
+#include <stdint.h>
 
 LocalValue *createLocalValue(ValType ty) {
     LocalValue *val = malloc(sizeof(LocalValue));
@@ -50,11 +54,34 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
         case I32Const:
             writeI32(ctx->stack, instr->i32Const.n);
             return LIST_CONTAINER(instr->link.next, Instr , link);
-
         case I32Add: {
-            int32_t lhs = readI32(ctx->stack);
             int32_t rhs = readI32(ctx->stack);
+            int32_t lhs = readI32(ctx->stack);
             writeI32(ctx->stack, lhs + rhs);
+            return LIST_CONTAINER(instr->link.next, Instr , link);
+        }
+        case I32Rem_s: {
+            // todo: assert rhs != 0
+            int32_t rhs = readI32(ctx->stack);
+            int32_t lhs = readI32(ctx->stack);
+            writeI32(ctx->stack, lhs % rhs);
+            return LIST_CONTAINER(instr->link.next, Instr , link);
+        }
+        case I32Lt_s: {
+            int32_t rhs = readI32(ctx->stack);
+            int32_t lhs = readI32(ctx->stack);
+            writeI32(ctx->stack, lhs < rhs);
+            return LIST_CONTAINER(instr->link.next, Instr , link);
+        }
+        case I32Ge_s: {
+            int32_t rhs = readI32(ctx->stack);
+            int32_t lhs = readI32(ctx->stack);
+            writeI32(ctx->stack, lhs >= rhs);
+            return LIST_CONTAINER(instr->link.next, Instr , link);
+        }
+        case I32Eqz: {
+            int32_t c = readI32(ctx->stack);
+            writeI32(ctx->stack, c == 0);
             return LIST_CONTAINER(instr->link.next, Instr , link);
         }
         case LocalGet: {
@@ -62,6 +89,11 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
                 ctx->stack, 
                 func->locals[instr->localGet.localIdx]->val.i32
             );
+            return LIST_CONTAINER(instr->link.next, Instr , link);
+        }
+        case LocalSet: {
+            int32_t val = readI32(ctx->stack);
+            func->locals[instr->localSet.localIdx]->val.i32 = val;
             return LIST_CONTAINER(instr->link.next, Instr , link);
         }
         case Call: {

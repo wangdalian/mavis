@@ -203,8 +203,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    int32_t ret = call(module, "add42", 10);
-    printf("[+] add42(10) = %d\n", ret);
+    int32_t ret = call(module, "ge10", 9);
+    printf("ret = %d\n", ret);
 
     munmap(head, s.st_size);
     close(fd);
