@@ -178,6 +178,30 @@ Export * parseExport(Buffer *buf) {
     return export;
 }
 
+ImportDesc * parseImportDesc(Buffer *buf) {
+    ImportDesc *d = malloc(sizeof(ImportDesc));
+
+    *d = (ImportDesc) {
+        .kind       = readByte(buf),
+        // todo
+        .typeIdx    = readU32_LEB128(buf)
+    };
+
+    return d;
+}
+
+Import * parseImport(Buffer *buf) {
+    Import *import = malloc(sizeof(Import));
+
+    *import = (Import) {
+        .modName    = readName(buf),
+        .name       = readName(buf),
+        .importDesc = parseImportDesc(buf)
+    };
+
+    return import;
+}
+
 Section * parseTypeSection(Buffer *buf) {
     uint32_t n = readU32_LEB128(buf);
 
@@ -238,6 +262,22 @@ Section * parseExportSection(Buffer *buf) {
     return sec;
 }
 
+
+Section *parseImportSection(Buffer *buf) {
+    uint32_t n = readU32_LEB128(buf);
+
+    Section *sec = malloc(sizeof(Section) + sizeof(Import *) * n);
+
+    sec->id = IMPORT_SECTION_ID;
+    sec->imports.n = n;
+
+    for(int i = 0; i < sec->imports.n; i++) {
+        sec->imports.x[i] = parseImport(buf);
+    }
+
+    return sec;
+}
+
 Section * parseSection(Buffer *buf) {
     uint8_t id  = readByte(buf);
     uint32_t size = readU32_LEB128(buf);
@@ -254,6 +294,9 @@ Section * parseSection(Buffer *buf) {
         
         case EXPORT_SECTION_ID:
             return parseExportSection(buf);
+        
+        case IMPORT_SECTION_ID:
+            return parseImportSection(buf);
     }
 
     return NULL;

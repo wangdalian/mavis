@@ -127,10 +127,26 @@ typedef struct {
 } Export;
 DEFINE_VECTOR(Export);
 
+typedef struct {
+    uint8_t     kind;
+    union {
+        // todo: add types
+        TypeIdx typeIdx;
+    };
+} ImportDesc;
+
+typedef struct {
+    char        *modName;
+    char        *name;
+    ImportDesc  *importDesc;
+} Import;
+DEFINE_VECTOR(Import);
+
 #define TYPE_SECTION_ID         1   
 #define FUNC_SECTION_ID         3 
 #define CODE_SECTION_ID         10
 #define EXPORT_SECTION_ID       7
+#define IMPORT_SECTION_ID       2
 
 typedef struct {
     list_elem_t link;
@@ -140,6 +156,7 @@ typedef struct {
         TypeIdx_v   typeIdxes;      // funcsec
         Code_v      codes;          // codesec
         Export_v    exports;        // exportsec
+        Import_v    imports;        // importsec
     };
 } Section;
 

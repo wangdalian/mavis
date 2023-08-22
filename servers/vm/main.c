@@ -156,6 +156,22 @@ static void printExportSection(Section *sec) {
     }
 }
 
+static void printImport(Import *import) {
+    printf(
+        "from %s import %s, kind = %#x, idx = %#x\n",
+        import->modName,
+        import->name,
+        import->importDesc->kind,
+        import->importDesc->typeIdx
+    );
+}
+
+static void printImportSection(Section *sec) {
+    puts("[Import Section]");
+    for(int i = 0; i < sec->imports.n; i++) {
+        printImport(sec->imports.x[i]);
+    }
+}
 int main(int argc, char *argv[]) {
     if(argc != 2) {
         puts("Usage: ./a.out <*.wasm>");
@@ -200,11 +216,14 @@ int main(int argc, char *argv[]) {
             case EXPORT_SECTION_ID:
                 printExportSection(sec);
                 break;
+            case IMPORT_SECTION_ID:
+                printImportSection(sec);
+                break;
         }
     }
 
-    int32_t ret = call(module, "loop");
-    printf("ret = %d\n", ret);
+    //int32_t ret = call(module, "gcd", 42, 28);
+    //printf("ret = %d\n", ret);
 
     munmap(head, s.st_size);
     close(fd);
