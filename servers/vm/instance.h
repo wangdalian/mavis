@@ -27,6 +27,7 @@ typedef struct {
 
 typedef struct {
     Buffer      *stack;
+    Buffer      *mem;
     list_t      blocks;
     WasmFunc    *funcs[];
 } Context;
@@ -37,6 +38,8 @@ typedef struct Instance {
     Section     *codesec;
     Section     *exportsec;
     Section     *importsec;
+    Section     *memsec;
+    Section     *datasec;
     Context     ctx;
 } Instance;
 

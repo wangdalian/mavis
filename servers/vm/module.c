@@ -1,5 +1,4 @@
 #include "module.h"
-#include "buffer.h"
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));
@@ -192,7 +191,6 @@ ImportDesc * parseImportDesc(Buffer *buf) {
 
     *d = (ImportDesc) {
         .kind       = readByte(buf),
-        // todo
         .typeIdx    = readU32_LEB128(buf)
     };
 
@@ -343,7 +341,6 @@ Section * parseMemSection(Buffer *buf) {
 }
 
 Section * parseDataSection(Buffer *buf) {
-    puts("data section called");
     uint32_t n = readU32_LEB128(buf);
     Section *sec = malloc(sizeof(Section) + sizeof(Data *) * n);
 

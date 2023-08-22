@@ -62,6 +62,13 @@ void printInstr(Instr *instr) {
         case I32Const:
             printf("i32.const %#x\n", instr->i32Const.n);
             break;
+        case I32Store:
+            printf(
+                "i32.store %#x %#x\n", 
+                instr->i32Store.offset, 
+                instr->i32Store.align
+            );
+            break;
         case LocalGet:
             printf("local.get %#x\n", instr->localGet.localIdx);
             break;
@@ -275,7 +282,7 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
-    //int32_t ret = call(module, "main");
+    int32_t ret = call(module, "_start");
     //printf("ret = %d\n", ret);
 
     munmap(head, s.st_size);
