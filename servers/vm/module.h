@@ -41,6 +41,7 @@ typedef struct {
 DEFINE_VECTOR(Locals);
 
 typedef enum {
+    I32Store    = 0x36,
     I32Const    = 0x41,
     LocalGet    = 0x20,
     LocalSet    = 0x21,
@@ -92,11 +93,17 @@ typedef struct {
 } CallInstr;
 
 typedef struct {
+    uint32_t    offset;
+    uint32_t    align;
+} I32StoreInstr;
+
+typedef struct {
     list_elem_t link;
     list_elem_t link_block; //used to link block instructions
     uint8_t     op;
     union {
         I32ConstInstr   i32Const;
+        I32StoreInstr   i32Store;
         LocalGetInstr   localGet;
         LocalSetInstr   localSet;
         IfInstr         If;

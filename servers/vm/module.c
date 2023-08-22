@@ -50,6 +50,13 @@ Instr * parseInstr(Buffer *buf) {
             };
             break;
         
+        case I32Store:
+            instr->i32Store = (I32StoreInstr) {
+                .offset = readU32_LEB128(buf),
+                .align  = readU32_LEB128(buf)
+            };
+            break;
+        
         case LocalGet:
             instr->localGet = (LocalGetInstr) {
                 .localIdx = readU32_LEB128(buf)
