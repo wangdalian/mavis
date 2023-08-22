@@ -56,6 +56,7 @@ typedef enum {
     Br          = 0xc,
     BrIf        = 0xd,
     Call        = 0x10,
+    Drop        = 0x1a,
     End         = 0xb
 } Op;
 
@@ -142,21 +143,50 @@ typedef struct {
 } Import;
 DEFINE_VECTOR(Import);
 
-#define TYPE_SECTION_ID         1   
-#define FUNC_SECTION_ID         3 
-#define CODE_SECTION_ID         10
-#define EXPORT_SECTION_ID       7
+typedef struct {
+    uint8_t     kind;
+    uint32_t    min;
+    uint32_t    max;
+} Limits;
+
+typedef Limits MemType;
+typedef struct {
+    MemType     mt;
+} Mem;
+DEFINE_VECTOR(Mem);
+
+typedef uint8_t Byte;
+typedef uint32_t MemIdx;
+
+typedef struct {
+    uint32_t    kind;
+    MemIdx      x;
+    list_t      expr;
+    // todo: fix this. add readByteVec to "buffer.c"?
+    uint32_t    n;
+    Byte        *data;
+} Data;
+DEFINE_VECTOR(Data);
+
+#define TYPE_SECTION_ID         1
 #define IMPORT_SECTION_ID       2
+#define FUNC_SECTION_ID         3
+#define MEM_SECTION_ID          5
+#define EXPORT_SECTION_ID       7
+#define CODE_SECTION_ID         10
+#define DATA_SECTION_ID         11
 
 typedef struct {
     list_elem_t link;
     int id;
     union {
         FuncType_v  funcTypes;      // typesec
-        TypeIdx_v   typeIdxes;      // funcsec
-        Code_v      codes;          // codesec
-        Export_v    exports;        // exportsec
         Import_v    imports;        // importsec
+        TypeIdx_v   typeIdxes;      // funcsec
+        Mem_v       mems;           // memsec
+        Export_v    exports;        // exportsec
+        Code_v      codes;          // codesec
+        Data_v      datas;          // datasec
     };
 } Section;
 

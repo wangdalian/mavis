@@ -111,6 +111,9 @@ void printInstr(Instr *instr) {
         case Call:
             printf("call %#x\n", instr->call.funcIdx);
             break;
+        case Drop:
+            puts("drop");
+            break;
         case End:
             puts("end");
             break;
@@ -172,6 +175,51 @@ static void printImportSection(Section *sec) {
         printImport(sec->imports.x[i]);
     }
 }
+
+static void printMem(Mem *m) {
+    switch(m->mt.kind) {
+        case 0:
+            printf("min = %#x\n", m->mt.min);
+            break;
+        case 1:
+            printf("min = %#x, max = %#x\n", m->mt.min, m->mt.max);
+            break;
+    }
+}
+
+static void printMemSection(Section *sec) {
+    puts("[Mem Section]");
+    for(int i = 0; i < sec->mems.n; i++) {
+        printMem(sec->mems.x[i]);
+    }
+}
+
+static void printData(Data *data) {
+    switch(data->kind) {
+        case 0:
+            puts("exprt:");
+            LIST_FOR_EACH(instr, &data->expr, Instr, link) {
+                printInstr(instr);
+            }
+            puts("data:");
+            for(uint32_t i = 0; i < data->n; i++) {
+                printf("%x", data->data[i]);
+            }
+            putchar('\n');
+            break;
+        case 1:
+        case 2:
+            break;
+    }
+}
+
+static void printDataSection(Section *sec) {
+    puts("[Data Section]");
+    for(int i = 0; i < sec->datas.n; i++) {
+        printData(sec->datas.x[i]);
+    }
+}
+
 int main(int argc, char *argv[]) {
     if(argc != 2) {
         puts("Usage: ./a.out <*.wasm>");
@@ -219,10 +267,16 @@ int main(int argc, char *argv[]) {
             case IMPORT_SECTION_ID:
                 printImportSection(sec);
                 break;
+            case MEM_SECTION_ID:
+                printMemSection(sec);
+                break;
+            case DATA_SECTION_ID:
+                printDataSection(sec);
+                break;
         }
     }
-    int32_t ret = call(module, "main");
-    printf("ret = %d\n", ret);
+    //int32_t ret = call(module, "main");
+    //printf("ret = %d\n", ret);
 
     munmap(head, s.st_size);
     close(fd);
