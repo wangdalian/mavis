@@ -1,8 +1,4 @@
 #include "instance.h"
-#include "buffer.h"
-#include "list.h"
-#include "module.h"
-#include <stdint.h>
 
 LocalValue *createLocalValue(ValType ty) {
     LocalValue *val = malloc(sizeof(LocalValue));
@@ -14,7 +10,23 @@ LocalValue *createLocalValue(ValType ty) {
     return val;
 }
 
-WasmFunc *createWasmFunc(Instance *instance, int idx) {
+WasmFunc * createImportedFunc(Instance *instance, int idx) {
+    Import *info = instance->importsec->imports.x[idx];
+    FuncType *ty = instance->typesec->funcTypes.x[info->importDesc->typeIdx];
+
+    WasmFunc *wasmf = malloc(sizeof(WasmFunc));
+
+    *wasmf = (WasmFunc) {
+        .ty         = ty,
+        .imported   = true,
+        .modName    = info->modName,
+        .name       = info->name
+    };
+
+    return wasmf;
+}
+
+WasmFunc *createDefinedFunc(Instance *instance, int idx) {
     Func *f = instance->codesec->codes.x[idx]->func;
     FuncType *ty = instance->typesec->funcTypes.x[idx];
 
@@ -193,13 +205,29 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
     return NULL;
 }
 
-// todo: fix type
-int32_t invokeF(Context *ctx, WasmFunc *f) {
+static void hello(void) {
+    puts("Hello!!");
+}
+
+int32_t invoke_external(Context *ctx, WasmFunc *f) {
+    // import from another wasm binary is not supported yet
+    // imported functions take no arguments for now
+    assert(strcmp(f->modName, "env") == 0);
+    if(strcmp(f->name, "hello") == 0) {
+        hello();
+    }
+
+    return 0;
+}
+
+int32_t invoke_interrnal(Context *ctx, WasmFunc *f) {
+    // set arguments
     for(int i = 0; i < f->ty->rt1->n; i++) {
         // todo: validate type
         f->locals[i]->val.i32 = readI32(ctx->stack);
     }
 
+    // exec
     Instr *instr = LIST_CONTAINER(list_head(f->codes), Instr, link);
     while(instr) {
         instr = invokeI(ctx, f, instr);
@@ -213,10 +241,19 @@ int32_t invokeF(Context *ctx, WasmFunc *f) {
     return ret;
 }
 
+// todo: fix return type
+int32_t invokeF(Context *ctx, WasmFunc *f) {
+    if(f->imported)
+        return invoke_external(ctx, f);
+    else
+        return invoke_interrnal(ctx, f);
+}
+
 Instance *instantiate(WasmModule *m) {
     // find sections
     Section *typesec = NULL, *funcsec = NULL, \
-            *codesec = NULL, *exportsec = NULL;
+            *codesec = NULL, *exportsec = NULL, \
+            *importsec = NULL;
     
     LIST_FOR_EACH(sec, &m->sections, Section, link) {
         switch(sec->id) {
@@ -231,20 +268,31 @@ Instance *instantiate(WasmModule *m) {
                 break;
             case EXPORT_SECTION_ID:
                 exportsec = sec;
+                break;
+            case IMPORT_SECTION_ID:
+                importsec = sec;
+                break;
         }
     }
 
     if(!funcsec)
         return NULL;
 
-    int num_funcs = funcsec->typeIdxes.n;
+    // count functions(including imported functions)
+    int num_imports = 0;
+    if(importsec)
+        num_imports = importsec->imports.n;
+    
+    int num_defined = funcsec->typeIdxes.n;
 
+    int num_funcs =  num_imports + num_defined;
     Instance *instance = malloc(sizeof(Instance) + sizeof(WasmFunc *) * num_funcs);
     *instance = (Instance) {
         .typesec    = typesec,
         .funcsec    = funcsec,
         .codesec    = codesec,
-        .exportsec  = exportsec
+        .exportsec  = exportsec,
+        .importsec  = importsec
     };
 
     // create context
@@ -252,9 +300,13 @@ Instance *instantiate(WasmModule *m) {
     instance->ctx.stack = newStack(buf, 4096);
     LIST_INIT(&instance->ctx.blocks);
 
-    // create functions
-    for(int i = 0; i < num_funcs; i++) {
-        instance->ctx.funcs[i] = createWasmFunc(instance, i);
+    // create functions(including imported functions)
+    int funcIdx = 0;
+    for(int i = 0; i < num_imports; i++) {
+        instance->ctx.funcs[funcIdx++] = createImportedFunc(instance, i);
+    }
+    for(int i = 0; i < num_defined; i++) {
+        instance->ctx.funcs[funcIdx++] = createDefinedFunc(instance, i);
     }
 
     return instance;

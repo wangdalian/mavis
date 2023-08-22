@@ -221,9 +221,8 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
-
-    //int32_t ret = call(module, "gcd", 42, 28);
-    //printf("ret = %d\n", ret);
+    int32_t ret = call(module, "main");
+    printf("ret = %d\n", ret);
 
     munmap(head, s.st_size);
     close(fd);

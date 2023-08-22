@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 typedef struct {
     uint8_t ty;
@@ -17,6 +18,9 @@ typedef struct {
 
 typedef struct {
     FuncType    *ty;
+    bool        imported;
+    char        *modName;
+    char        *name;
     list_t      *codes;
     LocalValue  *locals[];
 } WasmFunc;
@@ -32,6 +36,7 @@ typedef struct Instance {
     Section     *funcsec;
     Section     *codesec;
     Section     *exportsec;
+    Section     *importsec;
     Context     ctx;
 } Instance;
 
