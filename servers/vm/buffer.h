@@ -28,4 +28,7 @@ uint8_t writeByte(Buffer *buf, uint8_t val);
 uint32_t writeU32(Buffer *buf, uint32_t val);
 int32_t writeI32(Buffer *buf, int32_t val);
 
+uint8_t storeByte(Buffer *buf, int32_t offs, uint8_t val);
+int32_t storeI32(Buffer *buf, int32_t offs, int32_t val);
+
 bool eof(Buffer *buf);

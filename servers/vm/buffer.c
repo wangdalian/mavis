@@ -128,3 +128,19 @@ int32_t writeI32(Buffer *buf, int32_t val) {
     buf->p[buf->cursor] = val;
     return val;
 }
+
+uint8_t storeByte(Buffer *buf, int32_t offs, uint8_t val) {
+    if(offs + 1 > buf->len)
+        return 0;
+
+    *(buf->p + offs) = val;
+    return val;
+}
+
+int32_t storeI32(Buffer *buf, int32_t offs, int32_t val) {
+    if(offs + 4 > buf->len)
+        return 0;
+    
+    *(int32_t *)(buf->p + offs) = val;
+    return val;
+}
