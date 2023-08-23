@@ -1,5 +1,4 @@
 #include "main.h"
-#include <stdint.h>
 
 extern char __bss[], __bss_end[], __stack_top[];
 
@@ -24,6 +23,16 @@ static struct sbiret sbi_call(long arg0, long arg1, long arg2, long arg3, long a
 
 void putchar(char ch) {
     sbi_call(ch, 0, 0, 0, 0, 0, 0, 1);
+}
+
+long getchar(void) {
+    struct sbiret ret;
+    // wait for input
+    do {
+        ret = sbi_call(0, 0, 0, 0, 0, 0, 0, 2);
+    } while(ret.error < 0);
+
+    return ret.error;
 }
 
 // interrupt entry
@@ -231,6 +240,41 @@ void yield(void) {
     switch_context(&prev->sp, &next->sp);
 }
 
+void exit(void) {
+    current_proc->state = PROC_EXITED;
+    yield();
+    PANIC("unreachable");
+}
+
+void shell(void) {
+     while (1) {
+prompt:
+        printf("> ");
+        char cmdline[128];
+        for (int i = 0;; i++) {
+            char ch = getchar();
+            putchar(ch);
+            if (i == sizeof(cmdline) - 1) {
+                printf("command line too long\n");
+                goto prompt;
+            } else if (ch == '\r') {
+                printf("\n");
+                cmdline[i] = '\0';
+                break;
+            } else {
+                cmdline[i] = ch;
+            }
+        }
+
+        if (strcmp(cmdline, "hello") == 0)
+            printf("Hello world from shell!\n");
+        else if (strcmp(cmdline, "exit") == 0)
+            exit();
+        else
+            printf("unknown command: %s\n", cmdline);
+    }
+}
+
 void proc_a_entry(void) {
     printf("starting process A\n");
     while (1) {
@@ -262,9 +306,10 @@ void kernel_main(void) {
     idle_proc->pid = -1;
     current_proc = idle_proc;
     
-    create_process((uint32_t) proc_a_entry);
-    create_process((uint32_t) proc_b_entry);
-    
+    //create_process((uint32_t) proc_a_entry);
+    //create_process((uint32_t) proc_b_entry);
+    create_process((uint32_t) shell);
+
     yield();
     PANIC("switched to idle process");
 }
