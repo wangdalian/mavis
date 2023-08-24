@@ -1,4 +1,5 @@
 #include "task.h"
+#include "module.h"
 
 LocalValue *createLocalValue(ValType ty) {
     LocalValue *val = malloc(sizeof(LocalValue));
@@ -68,10 +69,12 @@ WasmFunc *createDefinedFunc(WasmModule *m, int idx) {
 }
 
 void enterBlock(Context *ctx, Instr *instr) {
+    puts("[+] enter block");
     list_push_back(&ctx->blocks, &instr->link_block);
 }
 
 void exitBlock(Context *ctx) {
+    puts("[+] exit block");
     list_pop_tail(&ctx->blocks);
 }
 
@@ -171,10 +174,12 @@ static void printInstr(Instr *instr) {
 }
 
 void enterFrame(Context *ctx, WasmFunc *f) {
+    puts("[+] enter frame");
     list_push_back(&ctx->call_stack, &f->link);
 }
 
 void exitFrame(Context *ctx) {
+    puts("[+] exit frame");
     list_pop_tail(&ctx->call_stack);
 }
 
@@ -312,106 +317,12 @@ Instr * invokeI(Context *ctx, Instr *instr) {
             return LIST_CONTAINER(instr->link.next, Instr , link);
         
         case End: {
-            /*
-            called when the last end instruction of the module is executed.
-            The end instruction of a loop block, if block, etc. is not executed; the exitBlock or exitFrame is used instead.
-            */
-
-            WasmFunc *f = LIST_CONTAINER(list_head(&ctx->call_stack), WasmFunc , link);
-
-            if(f->ty->rt2->n) {
-                printf("[+] ret = %d\n", readI32(ctx->stack));
-            }
-            exitFrame(ctx);
             return NULL;
         }
     }
 
     // unexpected instruction
     return NULL;
-}
-
-typedef struct {
-    uint32_t    base;
-    uint32_t    len;
-} Iovec;
-
-int32_t fd_write(
-    Context *ctx, 
-    int32_t fd, 
-    int32_t iovs, 
-    int32_t iovs_len, 
-    int32_t nwitten
-) { 
-    Iovec iov;
-    int n;
-    for(int i = 0; i < iovs_len; i++) {
-        iov = *(Iovec *)&ctx->mem->p[iovs];
-
-        // this is bad implemention
-        // you better make sure format string is null terminated
-        n = dprintf(fd, &ctx->mem->p[iov.base]);
-
-        // write n
-        storeI32(ctx->mem, nwitten, n);
-        iovs += sizeof(Iovec);
-    }
-    return n;
-}
-
-int32_t invokeExternal(Context *ctx, WasmFunc *f) {
-
-    // set args
-     for(int i = f->ty->rt1->n - 1; i >= 0; i--) {
-        // todo: validate type
-        f->locals[i]->val.i32 = readI32(ctx->stack);
-    }
-
-    // import from another wasm binary is not supported yet
-    // imported functions take no arguments for now
-    if((strcmp(f->modName, "wasi_unstable") == 0) && \
-       (strcmp(f->name, "fd_write") == 0)) {
-        return fd_write(
-            ctx, 
-            f->locals[0]->val.i32, 
-            f->locals[1]->val.i32,
-            f->locals[2]->val.i32, 
-            f->locals[3]->val.i32
-        );
-    }
-
-    return 0;
-}
-
-int32_t invokeInterrnal(Context *ctx, WasmFunc *f) {
-    enterFrame(ctx, f);
-    // set args
-    for(int i = f->ty->rt1->n - 1; i >= 0; i--) {
-        // todo: validate type
-        f->locals[i]->val.i32 = readI32(ctx->stack);
-    }
-
-    // exec
-    ctx->ip = LIST_CONTAINER(list_head(f->codes), Instr, link);
-    while(ctx->ip->op != End) {
-        ctx->ip = invokeI(ctx, ctx->ip);
-    }
-
-    int32_t ret = 0;
-
-    if(f->ty->rt2->n)
-        ret = readI32(ctx->stack);
-
-    exitFrame(ctx);
-    return ret;
-}
-
-// todo: fix return type
-int32_t invokeF(Context *ctx, WasmFunc *f) {
-    if(f->imported)
-        return invokeExternal(ctx, f);
-    else
-        return invokeInterrnal(ctx, f);
 }
 
 Task tasks[NUM_TASK_MAX];
@@ -443,7 +354,7 @@ Task *createTask(WasmModule *m) {
     Task *task = NULL;
     int i;
     for(i = 0; i < NUM_TASK_MAX; i++) {
-        if(tasks[i].state == TASK_UNUSED) {
+        if(tasks[i].state == TASK_UNUSED || tasks[i].state == TASK_EXITED) {
             task = &tasks[i];
             break;
         }
@@ -515,14 +426,11 @@ Task *createTask(WasmModule *m) {
     }
 
     // set tid
-    task->tid = i + 1;
+    task->tid = i;
 
     // set entry & ip
     WasmFunc *start = ctx->funcs[export->exportDesc->idx];
     ctx->ip = LIST_CONTAINER(list_head(start->codes), Instr, link);
-
-    // enter flame of _start
-    enterFrame(ctx, start);
 
     // set context
     task->ctx = ctx;
@@ -530,34 +438,138 @@ Task *createTask(WasmModule *m) {
     // set state
     task->state = TASK_RUNNABLE;
 
-    printf("[+] created task tid =  %d\n", task->tid);
+    printf("[+] created task: tid =  %d\n", task->tid);
 
     return task;
 }
 
 Task *current_task; // current task
-Task *idle_task;    // todo: impl idle task
+
+// idle task
+void idle_task(void) {
+    puts("[+] switched to idle task");
+    exit(0);
+
+    // todo: wait for new task
+}
 
 void switch_context(Context *ctx) {
     // todo: fix this
-    while(ctx->ip) {
+    while(ctx->ip->op != End) {
         ctx->ip = invokeI(ctx, ctx->ip);
     }
 }
 
 void yield(void) {
-    Task *next = idle_task;
+    Task *next = NULL;
     for(int i = 0; i < NUM_TASK_MAX; i++) {
-        Task *task = &tasks[(current_task->tid + i) % NUM_TASK_MAX];
-        if(task->state == TASK_RUNNABLE && task->tid > 0) {
+        Task *task = &tasks[i];
+        if(task->state == TASK_RUNNABLE) {
             next = task;
             break;
         }
     }
 
-    if(next == current_task)
-        return;
-    
+    if(!next)
+        idle_task();
+
     current_task = next;
     switch_context(current_task->ctx);
+}
+
+// WASI
+typedef struct {
+    uint32_t    base;
+    uint32_t    len;
+} Iovec;
+
+int32_t fd_write(
+    Context *ctx, 
+    int32_t fd, 
+    int32_t iovs, 
+    int32_t iovs_len, 
+    int32_t nwitten
+) { 
+    Iovec iov;
+    int n;
+    for(int i = 0; i < iovs_len; i++) {
+        iov = *(Iovec *)&ctx->mem->p[iovs];
+
+        // this is bad implemention
+        // you better make sure format string is null terminated
+        n = dprintf(fd, &ctx->mem->p[iov.base]);
+
+        // write n
+        storeI32(ctx->mem, nwitten, n);
+        iovs += sizeof(Iovec);
+    }
+    return n;
+}
+
+// builtin functions
+void exitTask(int code) {
+    current_task->state = TASK_EXITED;
+    printf("[+] task exited normally: tid =  %d, exit_code = %d\n", current_task->tid, code);
+    yield();
+    puts("[+] unreachable!");
+    exit(0);
+}
+
+int32_t invokeExternal(Context *ctx, WasmFunc *f) {
+    // set args
+     for(int i = f->ty->rt1->n - 1; i >= 0; i--) {
+        // todo: validate type
+        f->locals[i]->val.i32 = readI32(ctx->stack);
+    }
+
+    // import from another wasm binary is not supported yet
+    if((strcmp(f->modName, "wasi_unstable") == 0) && \
+       (strcmp(f->name, "fd_write") == 0)) {
+        return fd_write(
+            ctx, 
+            f->locals[0]->val.i32, 
+            f->locals[1]->val.i32,
+            f->locals[2]->val.i32, 
+            f->locals[3]->val.i32
+        );
+    }
+
+    if(strcmp(f->modName, "env") == 0) {
+        if(strcmp(f->name, "exit") == 0) {
+            exitTask(f->locals[0]->val.i32);
+        }
+    }
+
+    return 0;
+}
+
+int32_t invokeInternal(Context *ctx, WasmFunc *f) {
+    enterFrame(ctx, f);
+    // set args
+    for(int i = f->ty->rt1->n - 1; i >= 0; i--) {
+        // todo: validate type
+        f->locals[i]->val.i32 = readI32(ctx->stack);
+    }
+
+    // exec
+    ctx->ip = LIST_CONTAINER(list_head(f->codes), Instr, link);
+    while(ctx->ip->op != End) {
+        ctx->ip = invokeI(ctx, ctx->ip);
+    }
+
+    int32_t ret = 0;
+
+    if(f->ty->rt2->n)
+        ret = readI32(ctx->stack);
+
+    exitFrame(ctx);
+    return ret;
+}
+
+// todo: fix return type
+int32_t invokeF(Context *ctx, WasmFunc *f) {
+    if(f->imported)
+        return invokeExternal(ctx, f);
+    else
+        return invokeInternal(ctx, f);
 }

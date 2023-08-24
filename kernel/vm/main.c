@@ -227,10 +227,6 @@ static void printDataSection(Section *sec) {
     }
 }
 
-extern Task *tasks[NUM_TASK_MAX];
-extern Task *idle_task;
-extern Task *current_task;
-
 int main(int argc, char *argv[]) {
     if(argc != 2) {
         puts("Usage: ./a.out <*.wasm>");
@@ -277,11 +273,6 @@ int main(int argc, char *argv[]) {
     if(module->datasec)
         printDataSection(module->datasec);
     
-    idle_task = malloc(sizeof(Task));
-    tasks[0] = idle_task;
-    idle_task->tid = -1;
-    current_task = idle_task;
-
     createTask(module);
     yield();
 

@@ -38,6 +38,7 @@ typedef struct {
 #define NUM_TASK_MAX    8
 #define TASK_UNUSED     0
 #define TASK_RUNNABLE   1
+#define TASK_EXITED     2
 
 typedef int task_t;
 typedef struct {
