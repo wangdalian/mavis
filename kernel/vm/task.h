@@ -29,13 +29,22 @@ typedef struct {
     Buffer      *stack;
     Buffer      *mem;
     Instr       *ip;
+    // todo: add call stack
+    WasmFunc    *entry;
     list_t      blocks;
     WasmFunc    *funcs[];
 } Context;
 
+#define NUM_TASK_MAX    8
+#define TASK_UNUSED     0
+#define TASK_RUNNABLE   1
+
+typedef int task_t;
 typedef struct {
+    task_t  tid;
+    int     state;
     Context *ctx;
 } Task;
 
 Task *createTask(WasmModule *m);
-int32_t call(WasmModule *m, char *name, ...);
+void yield(void);

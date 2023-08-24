@@ -1,4 +1,5 @@
 #include "task.h"
+#include "buffer.h"
 #include "list.h"
 #include "module.h"
 
@@ -302,6 +303,10 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
             return LIST_CONTAINER(instr->link.next, Instr , link);
         
         case End:
+            // todo: fix this
+            if(func->ty->rt2->n) {
+                printf("[+] ret = %d\n", readI32(ctx->stack));
+            }
             /*
             called when the last end instruction of the module is executed.
             The end instruction of a loop block, if block, etc. is not executed; the exitBlock function is used instead.
@@ -394,11 +399,45 @@ int32_t invokeF(Context *ctx, WasmFunc *f) {
         return invokeInterrnal(ctx, f);
 }
 
+Task tasks[NUM_TASK_MAX];
+
 Task *createTask(WasmModule *m) {
-    if(!m->funcsec)
+    // funsec required
+    if(!m->funcsec) {
+        puts("[-] no funcsec");
         return NULL;
+    }
+
+    // _start function required
+    Section *exportsec = m->exportsec;
+    Export *export = NULL;
     
-    Task *task = malloc(sizeof(Task));
+    for(int i = 0; i < exportsec->exports.n; i++) {
+        Export *e = exportsec->exports.x[i];
+        if(e->exportDesc->kind == 0 && strcmp(e->name, "_start") == 0) {
+            export = e;
+            break;
+        }
+    }
+    if(!export) {
+        puts("[-] no _start function");
+        return NULL;
+    }
+    
+    // find available task slot
+    Task *task = NULL;
+    int i;
+    for(i = 0; i < NUM_TASK_MAX; i++) {
+        if(tasks[i].state == TASK_UNUSED) {
+            task = &tasks[i];
+            break;
+        }
+    }
+
+    if(!task) {
+        puts("[-] no free task slots");
+        return NULL;
+    }
 
     // count functions(including imported functions)
     int num_imports = 0;
@@ -457,56 +496,48 @@ Task *createTask(WasmModule *m) {
         ctx->funcs[funcIdx++] = createDefinedFunc(m, i);
     }
 
+    // set tid
+    task->tid = i + 1;
+
+    // set entry & ip
+    WasmFunc *start = ctx->funcs[export->exportDesc->idx];
+    ctx->entry = start;
+    ctx->ip = LIST_CONTAINER(list_head(start->codes), Instr, link);
+
+    // set context
     task->ctx = ctx;
+
+    // set state
+    task->state = TASK_RUNNABLE;
+
+    printf("[+] created task tid =  %d\n", task->tid);
 
     return task;
 }
 
-int32_t call(WasmModule *m, char *name, ...) {
-    va_list ap;
-    va_start(ap, name);
+Task *current_task; // current task
+Task *idle_task;    // todo: impl idle task
 
-    Section *exportsec = m->exportsec;
-
-    if(!exportsec) {
-        puts("export section undefined");
-        return 0;   
+void switch_context(Context *ctx) {
+    // todo: fix this
+    while(ctx->ip) {
+        ctx->ip = invokeI(ctx, ctx->entry, ctx->ip);
     }
+}
 
-    Task *task = createTask(m);
-    if(!task) {
-        puts("failed to instantiate");
-        return 0;
-    }
-
-    Context *ctx = task->ctx;
-    WasmFunc *f = NULL;
-    Export *e;
-    for(int i = 0; i < exportsec->exports.n; i++) {
-        e = exportsec->exports.x[i];
-        if(strcmp(e->name, name) == 0) {
-            assert(e->exportDesc->kind == 0);
-            f = ctx->funcs[exportsec->exports.x[i]->exportDesc->idx];
+void yield(void) {
+    Task *next = idle_task;
+    for(int i = 0; i < NUM_TASK_MAX; i++) {
+        Task *task = &tasks[(current_task->tid + i) % NUM_TASK_MAX];
+        if(task->state == TASK_RUNNABLE && task->tid > 0) {
+            next = task;
             break;
         }
     }
 
-    if(!f) {
-        printf("could not find %s\n", name);
-        return 0;
-    }
-
-    // prepare params
-    for(int i = 0; i < f->ty->rt1->n; i++) {
-        switch(*f->ty->rt1->x[i]) {
-            case I32:
-                writeI32(ctx->stack, va_arg(ap, int32_t));
-                break;
-            
-            // todo: add type
-        }
-    }
-
-    va_end(ap);
-    return invokeF(ctx, f); 
+    if(next == current_task)
+        return;
+    
+    current_task = next;
+    switch_context(current_task->ctx);
 }

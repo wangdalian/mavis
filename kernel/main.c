@@ -213,7 +213,7 @@ struct process *create_process(uint32_t pc) {
     return proc;
 }
 
-struct process *current_proc; // curret process
+struct process *current_proc; // currnet process
 struct process *idle_proc;    // idle process
 
 void yield(void) {
