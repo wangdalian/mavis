@@ -1,7 +1,4 @@
 #include "task.h"
-#include "buffer.h"
-#include "list.h"
-#include "module.h"
 
 LocalValue *createLocalValue(ValType ty) {
     LocalValue *val = malloc(sizeof(LocalValue));
@@ -36,9 +33,11 @@ WasmFunc * createImportedFunc(WasmModule *m, int idx) {
 }
 
 WasmFunc *createDefinedFunc(WasmModule *m, int idx) {
-    Func *f = m->codesec->codes.x[idx]->func;
-    FuncType *ty = m->typesec->funcTypes.x[idx];
+    int typeIdx = *m->funcsec->typeIdxes.x[idx];
 
+    Func *f = m->codesec->codes.x[idx]->func;
+    FuncType *ty = m->typesec->funcTypes.x[typeIdx];
+ 
     // count local variables
     int num_params = ty->rt1->n;
 
@@ -76,9 +75,7 @@ void exitBlock(Context *ctx) {
     list_pop_tail(&ctx->blocks);
 }
 
-Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr);
-
-Instr * branchIn(Context *ctx, WasmFunc *func, int idx) {
+Instr * branchIn(Context *ctx, int idx) {
     // todo: check block`s existence
     // todo: support if block?
 
@@ -173,11 +170,23 @@ static void printInstr(Instr *instr) {
     }   
 }
 
+void enterFrame(Context *ctx, WasmFunc *f) {
+    list_push_back(&ctx->call_stack, &f->link);
+}
+
+void exitFrame(Context *ctx) {
+    list_pop_tail(&ctx->call_stack);
+}
+
 int32_t invokeF(Context *ctx, WasmFunc *f);
 
-Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
+Instr * invokeI(Context *ctx, Instr *instr) {
+    // get current func
+    WasmFunc *func = LIST_CONTAINER(list_tail(&ctx->call_stack), WasmFunc, link);
+
     printf("[+] ip = ");
     printInstr(ctx->ip);
+
     switch(instr->op) {
         case I32Const:
             writeI32(ctx->stack, instr->i32Const.n);
@@ -250,7 +259,7 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
                 );
 
                 while(ctx->ip->op != Else) {
-                    ctx->ip = invokeI(ctx, func, ctx->ip);
+                    ctx->ip = invokeI(ctx, ctx->ip);
                 }
             } else {
                 ctx->ip = LIST_CONTAINER(
@@ -260,7 +269,7 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
                 );
 
                 while(ctx->ip->op != End) {
-                    ctx->ip = invokeI(ctx, func, ctx->ip);
+                    ctx->ip = invokeI(ctx, ctx->ip);
                 }
             }
             exitBlock(ctx);
@@ -277,12 +286,12 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
             );
         
         case Br:
-            return branchIn(ctx, func, instr->br.labelIdx);
+            return branchIn(ctx, instr->br.labelIdx);
         
         case BrIf: {
             int32_t cond = readI32(ctx->stack);
             if(cond)
-                return branchIn(ctx, func, instr->br.labelIdx);
+                return branchIn(ctx, instr->br.labelIdx);
             return LIST_CONTAINER(instr->link.next, Instr , link);
         }
 
@@ -302,16 +311,20 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
             readI32(ctx->stack);
             return LIST_CONTAINER(instr->link.next, Instr , link);
         
-        case End:
-            // todo: fix this
-            if(func->ty->rt2->n) {
-                printf("[+] ret = %d\n", readI32(ctx->stack));
-            }
+        case End: {
             /*
             called when the last end instruction of the module is executed.
-            The end instruction of a loop block, if block, etc. is not executed; the exitBlock function is used instead.
+            The end instruction of a loop block, if block, etc. is not executed; the exitBlock or exitFrame is used instead.
             */
+
+            WasmFunc *f = LIST_CONTAINER(list_head(&ctx->call_stack), WasmFunc , link);
+
+            if(f->ty->rt2->n) {
+                printf("[+] ret = %d\n", readI32(ctx->stack));
+            }
+            exitFrame(ctx);
             return NULL;
+        }
     }
 
     // unexpected instruction
@@ -371,6 +384,7 @@ int32_t invokeExternal(Context *ctx, WasmFunc *f) {
 }
 
 int32_t invokeInterrnal(Context *ctx, WasmFunc *f) {
+    enterFrame(ctx, f);
     // set args
     for(int i = f->ty->rt1->n - 1; i >= 0; i--) {
         // todo: validate type
@@ -379,8 +393,8 @@ int32_t invokeInterrnal(Context *ctx, WasmFunc *f) {
 
     // exec
     ctx->ip = LIST_CONTAINER(list_head(f->codes), Instr, link);
-    while(ctx->ip) {
-        ctx->ip = invokeI(ctx, f, ctx->ip);
+    while(ctx->ip->op != End) {
+        ctx->ip = invokeI(ctx, ctx->ip);
     }
 
     int32_t ret = 0;
@@ -388,6 +402,7 @@ int32_t invokeInterrnal(Context *ctx, WasmFunc *f) {
     if(f->ty->rt2->n)
         ret = readI32(ctx->stack);
 
+    exitFrame(ctx);
     return ret;
 }
 
@@ -455,6 +470,9 @@ Task *createTask(WasmModule *m) {
     uint8_t *buf = malloc(4096);
     ctx->stack = newStack(buf, 4096);
 
+    // inti call stack
+    LIST_INIT(&ctx->call_stack);
+
     // init block
     LIST_INIT(&ctx->blocks);
 
@@ -473,7 +491,7 @@ Task *createTask(WasmModule *m) {
                     // get offs(constant expr expected)
                     ctx->ip = LIST_CONTAINER(list_head(&data->expr), Instr, link);
                     do {
-                        ctx->ip = invokeI(ctx, NULL, ctx->ip);
+                        ctx->ip = invokeI(ctx, ctx->ip);
                     } while(ctx->ip->op != End);
 
                     int32_t offs = readI32(ctx->stack);
@@ -501,8 +519,10 @@ Task *createTask(WasmModule *m) {
 
     // set entry & ip
     WasmFunc *start = ctx->funcs[export->exportDesc->idx];
-    ctx->entry = start;
     ctx->ip = LIST_CONTAINER(list_head(start->codes), Instr, link);
+
+    // enter flame of _start
+    enterFrame(ctx, start);
 
     // set context
     task->ctx = ctx;
@@ -521,7 +541,7 @@ Task *idle_task;    // todo: impl idle task
 void switch_context(Context *ctx) {
     // todo: fix this
     while(ctx->ip) {
-        ctx->ip = invokeI(ctx, ctx->entry, ctx->ip);
+        ctx->ip = invokeI(ctx, ctx->ip);
     }
 }
 

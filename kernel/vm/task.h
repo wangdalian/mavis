@@ -17,6 +17,7 @@ typedef struct {
 } LocalValue;
 
 typedef struct {
+    list_elem_t link;
     FuncType    *ty;
     bool        imported;
     char        *modName;
@@ -29,8 +30,7 @@ typedef struct {
     Buffer      *stack;
     Buffer      *mem;
     Instr       *ip;
-    // todo: add call stack
-    WasmFunc    *entry;
+    list_t      call_stack;
     list_t      blocks;
     WasmFunc    *funcs[];
 } Context;

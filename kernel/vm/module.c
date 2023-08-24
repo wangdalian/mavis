@@ -354,36 +354,6 @@ Section * parseDataSection(Buffer *buf) {
     return sec;
 }
 
-Section * parseSection(Buffer *buf) {
-    uint8_t id  = readByte(buf);
-    uint32_t size = readU32_LEB128(buf);
-
-    switch(id) {
-        case TYPE_SECTION_ID:
-            return parseTypeSection(buf);
-        
-        case IMPORT_SECTION_ID:
-            return parseImportSection(buf);
-        
-        case FUNC_SECTION_ID:
-            return parseFuncSection(buf);
-
-        case MEM_SECTION_ID:
-            return parseMemSection(buf);
-        
-        case EXPORT_SECTION_ID:
-            return parseExportSection(buf);
-        
-        case CODE_SECTION_ID:
-            return parseCodeSection(buf);
-        
-        case DATA_SECTION_ID:
-            return parseDataSection(buf);
-    }
-
-    return NULL;
-}
-
 WasmModule * newWasmModule(Buffer *buf) {
     WasmModule *module = malloc(sizeof(WasmModule));
     *module = (WasmModule) {
