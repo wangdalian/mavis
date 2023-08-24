@@ -1,4 +1,5 @@
 #include "task.h"
+#include "list.h"
 
 LocalValue *createLocalValue(ValType ty) {
     LocalValue *val = malloc(sizeof(LocalValue));
@@ -65,17 +66,27 @@ WasmFunc *createDefinedFunc(WasmModule *m, int idx) {
     return wasmf;
 }
 
+void enterBlock(Context *ctx, Instr *instr) {
+    list_push_back(&ctx->blocks, &instr->link_block);
+}
+
+void exitBlock(Context *ctx) {
+    list_pop_tail(&ctx->blocks);
+}
+
 Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr);
 
 Instr * branchIn(Context *ctx, WasmFunc *func, int idx) {
     // todo: check block`s existence
     // todo: support if block?
-    list_elem_t *block = list_tail(&ctx->blocks);
-    while(idx) {
-        block = block->prev;
-        idx--;
+
+    // exit blocks
+    while(idx--) {
+        exitBlock(ctx);
     }
 
+    // taget block
+    list_elem_t *block = list_tail(&ctx->blocks);
     Instr *instr = LIST_CONTAINER(block, Instr, link_block);
 
     switch(instr->op) {
@@ -86,13 +97,7 @@ Instr * branchIn(Context *ctx, WasmFunc *func, int idx) {
                 link
             );
         case Block: {
-            // end instruction expected
-            invokeI(
-                ctx, func, 
-                LIST_CONTAINER(
-                    list_tail(&instr->block.instrs), Instr, link
-                )
-            );
+            exitBlock(ctx);
 
             return LIST_CONTAINER(
                 instr->link.next,
@@ -171,6 +176,7 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
         }
 
         case If: {
+            enterBlock(ctx, instr);
             int32_t cond = readI32(ctx->stack);
             if(cond) {
                 Instr *i = LIST_CONTAINER(
@@ -179,7 +185,7 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
                     link
                 );
 
-                while(i) {
+                while(i->op != Else) {
                     i = invokeI(ctx, func, i);
                 }
             } else {
@@ -189,16 +195,17 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
                     link
                 );
 
-                while(i) {
+                while(i->op != End) {
                     i = invokeI(ctx, func, i);
                 }
             }
+            exitBlock(ctx);
             return LIST_CONTAINER(instr->link.next, Instr , link);
         }
 
         case Block:
         case Loop:
-            list_push_back(&ctx->blocks, &instr->link_block);
+            enterBlock(ctx, instr);
             return LIST_CONTAINER(
                 list_head(&instr->block.instrs),
                 Instr,
@@ -232,8 +239,11 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
             return LIST_CONTAINER(instr->link.next, Instr , link);
         
         case End:
-            list_pop_tail(&ctx->blocks);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            /*
+            called when the last end instruction of the module is executed.
+            The end instruction of a loop block, if block, etc. is not executed; the exitBlock function is used instead.
+            */
+            return NULL;
     }
 
     // unexpected instruction
