@@ -1,5 +1,6 @@
 #include "task.h"
 #include "list.h"
+#include "module.h"
 
 LocalValue *createLocalValue(ValType ty) {
     LocalValue *val = malloc(sizeof(LocalValue));
@@ -111,9 +112,71 @@ Instr * branchIn(Context *ctx, WasmFunc *func, int idx) {
     return NULL;
 }
 
+static void printInstr(Instr *instr) {
+    switch(instr->op) {
+        case I32Const:
+            printf("i32.const %#x\n", instr->i32Const.n);
+            break;
+        case I32Store:
+            printf(
+                "i32.store %#x %#x\n", 
+                instr->i32Store.offset, 
+                instr->i32Store.align
+            );
+            break;
+        case LocalGet:
+            printf("local.get %#x\n", instr->localGet.localIdx);
+            break;
+        case LocalSet:
+            printf("local.set %#x\n", instr->localSet.localIdx);
+            break;
+        case I32Add:
+            puts("i32.add");
+            break;
+        case I32Eqz:
+            puts("i32.eqz");
+            break;
+        case I32Lt_s:
+            puts("i32.lt_s");
+            break;
+        case I32Ge_s:
+            puts("i32.ge_s");
+            break;
+        case I32Rem_s:
+            puts("i32.rem_s");
+            break;
+        case If:
+            printf("if %#x\n", instr->If.blockType);
+            break;
+        case Block:
+        case Loop:
+            printf("%s\n", instr->op == Block? "block" : "loop");
+            break;
+        case Br:
+        case BrIf:
+            printf(
+                "%s %#x\n", 
+                instr->op == Br? "br" : "br_if", 
+                instr->br.labelIdx
+            );
+            break;
+        case Call:
+            printf("call %#x\n", instr->call.funcIdx);
+            break;
+        case Drop:
+            puts("drop");
+            break;
+        case End:
+            puts("end");
+            break;
+    }   
+}
+
 int32_t invokeF(Context *ctx, WasmFunc *f);
 
 Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
+    printf("[+] ip = ");
+    printInstr(ctx->ip);
     switch(instr->op) {
         case I32Const:
             writeI32(ctx->stack, instr->i32Const.n);
@@ -179,24 +242,24 @@ Instr * invokeI(Context *ctx, WasmFunc *func, Instr *instr) {
             enterBlock(ctx, instr);
             int32_t cond = readI32(ctx->stack);
             if(cond) {
-                Instr *i = LIST_CONTAINER(
+                ctx->ip = LIST_CONTAINER(
                     list_head(&instr->If.thenInstrs),
                     Instr,
                     link
                 );
 
-                while(i->op != Else) {
-                    i = invokeI(ctx, func, i);
+                while(ctx->ip->op != Else) {
+                    ctx->ip = invokeI(ctx, func, ctx->ip);
                 }
             } else {
-                Instr *i = LIST_CONTAINER(
+                ctx->ip = LIST_CONTAINER(
                     list_head(&instr->If.elseInstrs),
                     Instr,
                     link
                 );
 
-                while(i->op != End) {
-                    i = invokeI(ctx, func, i);
+                while(ctx->ip->op != End) {
+                    ctx->ip = invokeI(ctx, func, ctx->ip);
                 }
             }
             exitBlock(ctx);
@@ -310,9 +373,9 @@ int32_t invokeInterrnal(Context *ctx, WasmFunc *f) {
     }
 
     // exec
-    Instr *instr = LIST_CONTAINER(list_head(f->codes), Instr, link);
-    while(instr) {
-        instr = invokeI(ctx, f, instr);
+    ctx->ip = LIST_CONTAINER(list_head(f->codes), Instr, link);
+    while(ctx->ip) {
+        ctx->ip = invokeI(ctx, f, ctx->ip);
     }
 
     int32_t ret = 0;
@@ -369,9 +432,11 @@ Task *createTask(WasmModule *m) {
 
                 if(data->kind == 0) {
                     // get offs(constant expr expected)
-                    LIST_FOR_EACH(instr, &data->expr, Instr, link) {
-                        invokeI(ctx, NULL, instr);
-                    }
+                    ctx->ip = LIST_CONTAINER(list_head(&data->expr), Instr, link);
+                    do {
+                        ctx->ip = invokeI(ctx, NULL, ctx->ip);
+                    } while(ctx->ip->op != End);
+
                     int32_t offs = readI32(ctx->stack);
 
                     // write data

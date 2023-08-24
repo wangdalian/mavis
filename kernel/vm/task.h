@@ -28,6 +28,7 @@ typedef struct {
 typedef struct {
     Buffer      *stack;
     Buffer      *mem;
+    Instr       *ip;
     list_t      blocks;
     WasmFunc    *funcs[];
 } Context;
