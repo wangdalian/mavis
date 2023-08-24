@@ -391,13 +391,45 @@ WasmModule * newWasmModule(Buffer *buf) {
         .version = readU32(buf)
     };
 
-    LIST_INIT(&module->sections);
-
-    while(!eof(buf))
-        list_push_back(
-            &module->sections,
-            &parseSection(buf)->link
-        );
+    Section **sec = &module->typesec;
+    for(int i = 0; i < 6; i++)
+        sec[i] = NULL;
     
+    // parse known sections
+    while(!eof(buf)) {
+        uint8_t id  = readByte(buf);
+        uint32_t size = readU32_LEB128(buf);
+
+        switch(id) {
+            case TYPE_SECTION_ID:
+                module->typesec = parseTypeSection(buf);
+                break;
+            
+            case IMPORT_SECTION_ID:
+                module->importsec = parseImportSection(buf);
+                break;
+
+            case FUNC_SECTION_ID:
+                module->funcsec = parseFuncSection(buf);
+                break;
+
+            case MEM_SECTION_ID:
+                module->memsec = parseMemSection(buf);
+                break;
+
+            case EXPORT_SECTION_ID:
+                module->exportsec = parseExportSection(buf);
+                break;
+
+            case CODE_SECTION_ID:
+                module->codesec = parseCodeSection(buf);
+                break;
+
+            case DATA_SECTION_ID:
+                module->datasec = parseDataSection(buf);
+                break;
+        }
+    }
+
     return module;
 }

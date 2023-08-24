@@ -33,13 +33,6 @@ typedef struct {
 } Context;
 
 typedef struct Instance {
-    Section     *typesec;
-    Section     *funcsec;
-    Section     *codesec;
-    Section     *exportsec;
-    Section     *importsec;
-    Section     *memsec;
-    Section     *datasec;
     Context     ctx;
 } Instance;
 

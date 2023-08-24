@@ -200,7 +200,17 @@ typedef struct {
 typedef struct {
     uint32_t    magic;
     uint32_t    version;
-    list_t      sections;
+
+    // known sections
+    Section     *typesec;
+    Section     *importsec;
+    Section     *funcsec;
+    Section     *memsec;
+    Section     *exportsec;
+    Section     *codesec;
+    Section     *datasec;
+
+    // todo: support custom sections?
 } WasmModule;
 
 WasmModule * newWasmModule(Buffer *buf);

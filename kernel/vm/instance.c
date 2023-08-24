@@ -10,9 +10,9 @@ LocalValue *createLocalValue(ValType ty) {
     return val;
 }
 
-WasmFunc * createImportedFunc(Instance *instance, int idx) {
-    Import *info = instance->importsec->imports.x[idx];
-    FuncType *ty = instance->typesec->funcTypes.x[info->importDesc->typeIdx];
+WasmFunc * createImportedFunc(WasmModule *m, int idx) {
+    Import *info = m->importsec->imports.x[idx];
+    FuncType *ty = m->typesec->funcTypes.x[info->importDesc->typeIdx];
 
     int num_params = ty->rt1->n;
     WasmFunc *wasmf = malloc(sizeof(WasmFunc) * num_params);
@@ -32,9 +32,9 @@ WasmFunc * createImportedFunc(Instance *instance, int idx) {
     return wasmf;
 }
 
-WasmFunc *createDefinedFunc(Instance *instance, int idx) {
-    Func *f = instance->codesec->codes.x[idx]->func;
-    FuncType *ty = instance->typesec->funcTypes.x[idx];
+WasmFunc *createDefinedFunc(WasmModule *m, int idx) {
+    Func *f = m->codesec->codes.x[idx]->func;
+    FuncType *ty = m->typesec->funcTypes.x[idx];
 
     // count local variables
     int num_params = ty->rt1->n;
@@ -321,59 +321,18 @@ int32_t invokeF(Context *ctx, WasmFunc *f) {
 }
 
 Instance *instantiate(WasmModule *m) {
-    // find sections
-    Section *typesec = NULL, *funcsec = NULL, \
-            *codesec = NULL, *exportsec = NULL, \
-            *importsec = NULL, *memsec = NULL, \
-            *datasec = NULL;
-    
-    LIST_FOR_EACH(sec, &m->sections, Section, link) {
-        switch(sec->id) {
-            case TYPE_SECTION_ID:
-                typesec = sec;
-                break;
-            case FUNC_SECTION_ID:
-                funcsec = sec;
-                break;
-            case CODE_SECTION_ID:
-                codesec = sec;
-                break;
-            case EXPORT_SECTION_ID:
-                exportsec = sec;
-                break;
-            case IMPORT_SECTION_ID:
-                importsec = sec;
-                break;
-            case MEM_SECTION_ID:
-                memsec = sec;
-                break;
-            case DATA_SECTION_ID:
-                datasec = sec;
-                break;
-        }
-    }
-
-    if(!funcsec)
+    if(!m->funcsec)
         return NULL;
 
     // count functions(including imported functions)
     int num_imports = 0;
-    if(importsec)
-        num_imports = importsec->imports.n;
+    if(m->importsec)
+        num_imports = m->importsec->imports.n;
     
-    int num_defined = funcsec->typeIdxes.n;
+    int num_defined =m->funcsec->typeIdxes.n;
 
     int num_funcs =  num_imports + num_defined;
     Instance *instance = malloc(sizeof(Instance) + sizeof(WasmFunc *) * num_funcs);
-    *instance = (Instance) {
-        .typesec    = typesec,
-        .funcsec    = funcsec,
-        .codesec    = codesec,
-        .exportsec  = exportsec,
-        .importsec  = importsec,
-        .memsec     = memsec,
-        .datasec    = datasec
-    };
 
     // create context
     // create stack
@@ -384,15 +343,15 @@ Instance *instantiate(WasmModule *m) {
     LIST_INIT(&instance->ctx.blocks);
 
     // create mem if memsec is defined
-    if(memsec) {
+    if(m->memsec) {
         // allocate one page for now
         uint8_t *page = calloc(1, 4096);
         instance->ctx.mem = newBuffer(page, 4096);
         // init mem if datasec is defined
-        if(datasec) {
+        if(m->datasec) {
             Data *data;
-            for(int i = 0; i < datasec->datas.n; i++) {
-                data = datasec->datas.x[i];
+            for(int i = 0; i < m->datasec->datas.n; i++) {
+                data = m->datasec->datas.x[i];
 
                 if(data->kind == 0) {
                     // get offs(constant expr expected)
@@ -413,10 +372,10 @@ Instance *instantiate(WasmModule *m) {
     // create functions(including imported functions)
     int funcIdx = 0;
     for(int i = 0; i < num_imports; i++) {
-        instance->ctx.funcs[funcIdx++] = createImportedFunc(instance, i);
+        instance->ctx.funcs[funcIdx++] = createImportedFunc(m, i);
     }
     for(int i = 0; i < num_defined; i++) {
-        instance->ctx.funcs[funcIdx++] = createDefinedFunc(instance, i);
+        instance->ctx.funcs[funcIdx++] = createDefinedFunc(m, i);
     }
 
     return instance;
@@ -426,16 +385,9 @@ int32_t call(WasmModule *m, char *name, ...) {
     va_list ap;
     va_start(ap, name);
 
-    Section *export = NULL;
+    Section *exportsec = m->exportsec;
 
-    LIST_FOR_EACH(sec, &m->sections, Section, link) {
-        if(sec->id == EXPORT_SECTION_ID) {
-            export = sec;
-            break;
-        }
-    }
-
-    if(!export) {
+    if(!exportsec) {
         puts("export section undefined");
         return 0;   
     }
@@ -448,11 +400,11 @@ int32_t call(WasmModule *m, char *name, ...) {
 
     WasmFunc *f = NULL;
     Export *e;
-    for(int i = 0; i < export->exports.n; i++) {
-        e = export->exports.x[i];
+    for(int i = 0; i < exportsec->exports.n; i++) {
+        e = exportsec->exports.x[i];
         if(strcmp(e->name, name) == 0) {
             assert(e->exportDesc->kind == 0);
-            f = instance->ctx.funcs[export->exports.x[i]->exportDesc->idx];
+            f = instance->ctx.funcs[exportsec->exports.x[i]->exportDesc->idx];
             break;
         }
     }

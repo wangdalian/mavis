@@ -204,7 +204,7 @@ static void printMemSection(Section *sec) {
 static void printData(Data *data) {
     switch(data->kind) {
         case 0:
-            puts("exprt:");
+            puts("expr:");
             LIST_FOR_EACH(instr, &data->expr, Instr, link) {
                 printInstr(instr);
             }
@@ -257,31 +257,22 @@ int main(int argc, char *argv[]) {
         module->version
     );
 
-    LIST_FOR_EACH(sec, &module->sections, Section, link) {
-        switch(sec->id) {
-            case TYPE_SECTION_ID:
-                printTypeSection(sec);
-                break;
-            case CODE_SECTION_ID:
-                printCodeSection(sec);
-                break;
-            case FUNC_SECTION_ID:
-                printFuncSection(sec);
-                break;
-            case EXPORT_SECTION_ID:
-                printExportSection(sec);
-                break;
-            case IMPORT_SECTION_ID:
-                printImportSection(sec);
-                break;
-            case MEM_SECTION_ID:
-                printMemSection(sec);
-                break;
-            case DATA_SECTION_ID:
-                printDataSection(sec);
-                break;
-        }
-    }
+    // print known sections
+    if(module->typesec)
+        printTypeSection(module->typesec);
+    if(module->importsec)
+        printImportSection(module->importsec);
+    if(module->funcsec)
+        printFuncSection(module->funcsec);
+    if(module->memsec)
+        printMemSection(module->memsec);
+    if(module->exportsec)
+        printExportSection(module->exportsec);
+    if(module->codesec)
+        printCodeSection(module->codesec);
+    if(module->datasec)
+        printDataSection(module->datasec);
+
     int32_t ret = call(module, "_start");
     //printf("ret = %d\n", ret);
 
