@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
     if(module->datasec)
         printDataSection(module->datasec);
 
-    int32_t ret = call(module, "loop");
+    int32_t ret = call(module, "_start");
     printf("ret = %d\n", ret);
 
     munmap(head, s.st_size);

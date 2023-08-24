@@ -30,6 +30,10 @@ typedef struct {
     Buffer      *mem;
     list_t      blocks;
     WasmFunc    *funcs[];
+} Context;
+
+typedef struct {
+    Context *ctx;
 } Task;
 
 Task *createTask(WasmModule *m);
