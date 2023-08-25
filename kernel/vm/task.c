@@ -1,5 +1,4 @@
 #include "task.h"
-#include "module.h"
 
 LocalValue *createLocalValue(ValType ty) {
     LocalValue *val = malloc(sizeof(LocalValue));
@@ -16,7 +15,7 @@ WasmFunc * createImportedFunc(WasmModule *m, int idx) {
     FuncType *ty = m->typesec->funcTypes.x[info->importDesc->typeIdx];
 
     int num_params = ty->rt1->n;
-    WasmFunc *wasmf = malloc(sizeof(WasmFunc) * num_params);
+    WasmFunc *wasmf = malloc(sizeof(WasmFunc) + sizeof(LocalValue *) * num_params);
 
     *wasmf = (WasmFunc) {
         .ty         = ty,
