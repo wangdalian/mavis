@@ -118,6 +118,9 @@ void printInstr(Instr *instr) {
         case Call:
             printf("call %#x\n", instr->call.funcIdx);
             break;
+        case Nop:
+            puts("nop");
+            break;
         case Drop:
             puts("drop");
             break;

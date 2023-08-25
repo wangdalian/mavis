@@ -115,6 +115,7 @@ Instr * parseInstr(Buffer *buf) {
             instr->call.funcIdx = readU32_LEB128(buf);
             break;
         
+        case Nop:
         case Drop:
         case End:
             break;

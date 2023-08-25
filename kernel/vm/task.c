@@ -68,12 +68,12 @@ WasmFunc *createDefinedFunc(WasmModule *m, int idx) {
 }
 
 void enterBlock(Context *ctx, Instr *instr) {
-    puts("[+] enter block");
+    //puts("[+] enter block");
     list_push_back(&ctx->blocks, &instr->link_block);
 }
 
 void exitBlock(Context *ctx) {
-    puts("[+] exit block");
+    //puts("[+] exit block");
     list_pop_tail(&ctx->blocks);
 }
 
@@ -173,12 +173,12 @@ static void printInstr(Instr *instr) {
 }
 
 void enterFrame(Context *ctx, WasmFunc *f) {
-    puts("[+] enter frame");
+    //puts("[+] enter frame");
     list_push_back(&ctx->call_stack, &f->link);
 }
 
 void exitFrame(Context *ctx) {
-    puts("[+] exit frame");
+    //puts("[+] exit frame");
     list_pop_tail(&ctx->call_stack);
 }
 
@@ -188,8 +188,8 @@ Instr * invokeI(Context *ctx, Instr *instr) {
     // get current func
     WasmFunc *func = LIST_CONTAINER(list_tail(&ctx->call_stack), WasmFunc, link);
 
-    printf("[+] ip = ");
-    printInstr(ctx->ip);
+    //printf("[+] ip = ");
+    //printInstr(ctx->ip);
 
     switch(instr->op) {
         case I32Const:
@@ -310,6 +310,9 @@ Instr * invokeI(Context *ctx, Instr *instr) {
             storeI32(ctx->mem, offs, val);
             return LIST_CONTAINER(instr->link.next, Instr , link);
         }
+
+        case Nop:
+            return LIST_CONTAINER(instr->link.next, Instr , link);
 
         case Drop:
             readI32(ctx->stack);
@@ -460,6 +463,7 @@ void switch_context(Context *ctx) {
 }
 
 void yield(void) {
+    // todo: fix this
     Task *next = NULL;
     for(int i = 0; i < NUM_TASK_MAX; i++) {
         Task *task = &tasks[i];

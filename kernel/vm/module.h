@@ -41,6 +41,7 @@ typedef struct {
 DEFINE_VECTOR(Locals);
 
 typedef enum {
+    Nop         = 0x1,
     I32Store    = 0x36,
     I32Const    = 0x41,
     LocalGet    = 0x20,
