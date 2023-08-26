@@ -27,7 +27,11 @@ SECTIONS {
     __stack_top = .;
 
     . = ALIGN(4096);
-    __free_ram = .;
+    __malloc_pool_start = .;
+    . += 4096;
+    __malloc_pool_end = .;
+    
+    __pmalloc_pool_start = .;
     . += 64 * 1024 * 1024;
-    __free_ram_end = .;
+    __pmalloc_pool_end = .;
 }

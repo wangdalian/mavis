@@ -36,6 +36,13 @@ int strcmp(const char *s1, const char *s2) {
     return *s1 - *s2;
 }
 
+void puts(const char *s) {
+    while(*s) {
+        putchar(*s++);
+    }
+    putchar('\n');
+}
+
 void printf(const char *fmt, ...) {
     va_list vargs;
     va_start(vargs, fmt);
@@ -91,4 +98,26 @@ void printf(const char *fmt, ...) {
     }
 
     va_end(vargs);
+}
+
+// todo: impl sbrk and free
+extern uint8_t __malloc_pool_start[], __malloc_pool_end[];
+
+void *malloc(size_t size) {
+    static uint8_t *ptr = __malloc_pool_start;
+
+    printf("[+] ptr = 0x%x\n", ptr);
+
+    if(!is_aligned(ptr, 0x10))
+        ptr = align_up(ptr, 0x10);
+    
+    // PANIC?
+    if(ptr + size > __malloc_pool_end)
+        return NULL;
+    
+    printf("[+] alloc mem @0x%x, size = %x\n", ptr, size);
+
+    uint8_t *ret = ptr;
+    ptr += size;
+    return ret;
 }
