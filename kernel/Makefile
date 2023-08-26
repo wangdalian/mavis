@@ -20,20 +20,26 @@ kernel_elf = $(BUILD_DIR)/kernel.elf
 build: $(kernel_elf)
 
 # build kernel
-objs := $(addprefix $(BUILD_DIR)/, kernel.o common.o)
-linker_script := $(BUILD_DIR)/kernel.ld
+objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o) \
+		$(addprefix $(BUILD_DIR)/servers/, hello.o)
+
+linker_script := $(BUILD_DIR)/kernel/kernel.ld
 $(kernel_elf): OBJS := $(objs)
 $(kernel_elf): LDFLAGS := -T$(linker_script)
 
-$(kernel_elf): $(objs) $(linker_script)
+$(kernel_elf): $(objs) $(servers) $(linker_script)
 	$(LD) $(LDFLAGS) -Map $(@:.elf=.map) -o $@ $(OBJS)
 
-$(BUILD_DIR)/%.o: %.c
+$(BUILD_DIR)/kernel/%.o: %.c
 	$(MKDIR) -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(BUILD_DIR)/servers/hello.o: hello.s
+	$(MKDIR) -p $(@D)
+	$(CC) --target=riscv32 -c -o $@ $<
+
 # linker script for kernel
-$(BUILD_DIR)/kernel.ld: kernel.ld
+$(BUILD_DIR)/kernel/kernel.ld: kernel.ld
 	$(MKDIR) -p $(@D)
 	$(CP) $< $@
 

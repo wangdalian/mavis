@@ -2,6 +2,9 @@
 
 #include <stdint.h>
 #include "common.h"
+#include "vm.h"
+#include "buffer.h"
+#include "module.h"
 
 struct trap_frame {
     uint32_t ra;
@@ -58,13 +61,16 @@ struct trap_frame {
 typedef int         tid_t;
 
 typedef struct {
-    tid_t   tid;
-    int     state;
-    vaddr_t sp;
-    uint8_t stack[8192];
+    tid_t       tid;
+    int         state;
+    uint32_t    sp;
+    uint8_t     stack[8192];
 } Task;
 
 struct sbiret {
     long error;
     long value;
 };
+
+
+void exit(int32_t code);

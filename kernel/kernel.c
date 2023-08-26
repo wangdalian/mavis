@@ -164,6 +164,55 @@ __attribute__((naked)) void switch_context(uint32_t *prev_sp, uint32_t *next_sp)
     );
 }
 
+__attribute__((naked)) void task_entry(void) {
+    __asm__ __volatile__(
+        "lw a0, 0 * 4(sp)\n"  // a0
+        "lw a1, 1 * 4(sp)\n"  // ip
+        "add sp, sp, 2 * 4\n"
+        "jalr a1\n"
+
+        "1:\n"
+        "j 1b\n"
+    );
+}
+
+Task *create_vm_task(Context *ctx) {
+    Task *task = NULL;
+    int i;
+    for (i = 0; i < NUM_TASK_MAX; i++) {
+        if (tasks[i].state == TASK_UNUSED) {
+            task = &tasks[i];
+            break;
+        }
+    }
+
+    if (!task)
+        PANIC("no free process slots");
+
+    uint32_t *sp = (uint32_t *) &task->stack[sizeof(task->stack)];
+    *--sp = (uint32_t)run_vm;
+    *--sp = (uint32_t)ctx;
+
+    *--sp = 0;                      // s11
+    *--sp = 0;                      // s10
+    *--sp = 0;                      // s9
+    *--sp = 0;                      // s8
+    *--sp = 0;                      // s7
+    *--sp = 0;                      // s6
+    *--sp = 0;                      // s5
+    *--sp = 0;                      // s4
+    *--sp = 0;                      // s3
+    *--sp = 0;                      // s2
+    *--sp = 0;                      // s1
+    *--sp = 0;                      // s0
+    *--sp = (uint32_t) task_entry;  // ra
+
+    task->tid = i + 1;
+    task->state = TASK_RUNNABLE;
+    task->sp = (uint32_t)sp;
+    return task;
+}
+
 Task *create_task(uint32_t pc) {
    Task *task = NULL;
     int i;
@@ -190,11 +239,11 @@ Task *create_task(uint32_t pc) {
     *--sp = 0;                      // s2
     *--sp = 0;                      // s1
     *--sp = 0;                      // s0
-    *--sp = (uint32_t) pc;          // ra
+    *--sp = pc;                     // ra
 
     task->tid = i + 1;
     task->state = TASK_RUNNABLE;
-    task->sp = (uint32_t) sp;
+    task->sp = (uint32_t)sp;
     return task;
 }
 
@@ -225,7 +274,8 @@ void yield(void) {
     switch_context(&prev->sp, &next->sp);
 }
 
-void exit(void) {
+void exit(int32_t code) {
+    printf("task exited normally: tid = %x, code = %x\n", current_task->tid, code);
     current_task->state = TASK_EXITED;
     yield();
     PANIC("unreachable");
@@ -254,26 +304,35 @@ prompt:
         if (strcmp(cmdline, "hello") == 0)
             printf("Hello world from shell!\n");
         else if (strcmp(cmdline, "exit") == 0)
-            exit();
+            exit(0);
         else
             printf("unknown command: %s\n", cmdline);
     }
 }
 
+extern uint8_t __hello_start[];
+extern int __hello_size[];
+
 void kernel_main(void) {
     memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
     
     WRITE_CSR(stvec, (uint32_t) kernel_entry);
-    puts("[+] welcome to hinaOS!");
-    malloc(0x10);
-    malloc(0x8);
-    idle_task = create_task((uint32_t) NULL);
+
+    // create idle task(kernel_main itself)
+    idle_task = create_task(0);
     idle_task->tid = -1;
     current_task = idle_task;
 
-    create_task((uint32_t) shell);
+    // create vm task
+    printf("[+] hello_server @0x%x size = %x\n", __hello_start, __hello_size[0]);
+    
+    Buffer *buf = newBuffer(__hello_start, __hello_size[0]);
+    WasmModule *m = newWasmModule(buf);
+    Context *ctx = createContext(m);
+    create_vm_task(ctx);
 
     yield();
+    
     PANIC("switched to idle process");
 }
 
