@@ -281,6 +281,9 @@ void exit(int32_t code) {
     PANIC("unreachable");
 }
 
+extern uint8_t __hello_start[];
+extern int __hello_size[];
+
 void shell(void) {
      while (1) {
 prompt:
@@ -301,17 +304,20 @@ prompt:
             }
         }
 
-        if (strcmp(cmdline, "hello") == 0)
-            printf("Hello world from shell!\n");
+        if (strcmp(cmdline, "hello") == 0) {
+            // todo: fix this.
+            Buffer *buf = newBuffer(__hello_start, __hello_size[0]);
+            WasmModule *m = newWasmModule(buf);
+            Context *ctx = createContext(m);
+            create_vm_task(ctx);
+            yield();
+        }
         else if (strcmp(cmdline, "exit") == 0)
             exit(0);
         else
             printf("unknown command: %s\n", cmdline);
     }
 }
-
-extern uint8_t __hello_start[];
-extern int __hello_size[];
 
 void kernel_main(void) {
     memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
@@ -323,17 +329,11 @@ void kernel_main(void) {
     idle_task->tid = -1;
     current_task = idle_task;
 
-    // create vm task
-    printf("[+] hello_server @0x%x size = %x\n", __hello_start, __hello_size[0]);
-    
-    Buffer *buf = newBuffer(__hello_start, __hello_size[0]);
-    WasmModule *m = newWasmModule(buf);
-    Context *ctx = createContext(m);
-    create_vm_task(ctx);
-
+    // create shell
+    create_task((uint32_t)shell);
     yield();
     
-    PANIC("switched to idle process");
+    PANIC("switched to idle task");
 }
 
 __attribute__((section(".text.boot")))
