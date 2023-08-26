@@ -1,4 +1,4 @@
-#include "main.h"
+#include "kernel.h"
 
 extern char __bss[], __bss_end[], __stack_top[];
 
@@ -141,7 +141,7 @@ paddr_t alloc_pages(uint32_t n) {
     return paddr;    
 }
 
-struct process procs[PROCS_MAX];
+Task tasks[NUM_TASK_MAX];
 
 __attribute__((naked)) void switch_context(uint32_t *prev_sp, uint32_t *next_sp) {
      __asm__ __volatile__(
@@ -179,20 +179,20 @@ __attribute__((naked)) void switch_context(uint32_t *prev_sp, uint32_t *next_sp)
     );
 }
 
-struct process *create_process(uint32_t pc) {
-    struct process *proc = NULL;
+Task *create_task(uint32_t pc) {
+   Task *task = NULL;
     int i;
-    for (i = 0; i < PROCS_MAX; i++) {
-        if (procs[i].state == PROC_UNUSED) {
-            proc = &procs[i];
+    for (i = 0; i < NUM_TASK_MAX; i++) {
+        if (tasks[i].state == TASK_UNUSED) {
+            task = &tasks[i];
             break;
         }
     }
 
-    if (!proc)
+    if (!task)
         PANIC("no free process slots");
 
-    uint32_t *sp = (uint32_t *) &proc->stack[sizeof(proc->stack)];
+    uint32_t *sp = (uint32_t *) &task->stack[sizeof(task->stack)];
     *--sp = 0;                      // s11
     *--sp = 0;                      // s10
     *--sp = 0;                      // s9
@@ -207,26 +207,26 @@ struct process *create_process(uint32_t pc) {
     *--sp = 0;                      // s0
     *--sp = (uint32_t) pc;          // ra
 
-    proc->pid = i + 1;
-    proc->state = PROC_RUNNABLE;
-    proc->sp = (uint32_t) sp;
-    return proc;
+    task->tid = i + 1;
+    task->state = TASK_RUNNABLE;
+    task->sp = (uint32_t) sp;
+    return task;
 }
 
-struct process *current_proc; // currnet process
-struct process *idle_proc;    // idle process
+Task *current_task;
+Task *idle_task;
 
 void yield(void) {
-    struct process *next = idle_proc;
-    for (int i = 0; i < PROCS_MAX; i++) {
-        struct process *proc = &procs[(current_proc->pid + i) % PROCS_MAX];
-        if (proc->state == PROC_RUNNABLE && proc->pid > 0) {
-            next = proc;
+    Task *next = idle_task;
+    for (int i = 0; i < NUM_TASK_MAX; i++) {
+        Task *task = &tasks[(current_task->tid + i) % NUM_TASK_MAX];
+        if (task->state == TASK_RUNNABLE && task->tid > 0) {
+            next = task;
             break;
         }
     }
 
-    if (next == current_proc)
+    if (next == current_task)
         return;
     
     __asm__ __volatile__(
@@ -235,13 +235,13 @@ void yield(void) {
         : [sscratch] "r" ((uint32_t) &next->stack[sizeof(next->stack)])
     );
 
-    struct process *prev = current_proc;
-    current_proc = next;
+    Task *prev = current_task;
+    current_task = next;
     switch_context(&prev->sp, &next->sp);
 }
 
 void exit(void) {
-    current_proc->state = PROC_EXITED;
+    current_task->state = TASK_EXITED;
     yield();
     PANIC("unreachable");
 }
@@ -275,40 +275,16 @@ prompt:
     }
 }
 
-void proc_a_entry(void) {
-    printf("starting process A\n");
-    while (1) {
-        putchar('A');
-        yield();
-
-        for (int i = 0; i < 30000000; i++)
-            __asm__ __volatile__("nop");
-    }
-}
-
-void proc_b_entry(void) {
-    printf("starting process B\n");
-    while (1) {
-        putchar('B');
-        yield();
-
-        for (int i = 0; i < 30000000; i++)
-            __asm__ __volatile__("nop");
-    }
-}
-
 void kernel_main(void) {
     memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
     
     WRITE_CSR(stvec, (uint32_t) kernel_entry);
     
-    idle_proc = create_process((uint32_t) NULL);
-    idle_proc->pid = -1;
-    current_proc = idle_proc;
-    
-    //create_process((uint32_t) proc_a_entry);
-    //create_process((uint32_t) proc_b_entry);
-    create_process((uint32_t) shell);
+    idle_task = create_task((uint32_t) NULL);
+    idle_task->tid = -1;
+    current_task = idle_task;
+
+    create_task((uint32_t) shell);
 
     yield();
     PANIC("switched to idle process");

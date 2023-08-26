@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <libs/common.h>
+#include "common.h"
 
 struct trap_frame {
     uint32_t ra;
@@ -57,17 +57,23 @@ struct trap_frame {
             __asm__ __volatile__("wfi");                                        \
     }while(0)
 
-#define PROCS_MAX       8
-#define PROC_UNUSED     0
-#define PROC_RUNNABLE   1
-#define PROC_EXITED     2
+#define NUM_TASK_MAX    8
+#define TASK_UNUSED     0
+#define TASK_RUNNABLE   1
+#define TASK_EXITED     2
 
-struct process {
-    int     pid;
+#define PAGE_SIZE       4096
+
+typedef uintptr_t   vaddr_t;
+typedef uintptr_t   paddr_t;
+typedef int         tid_t;
+
+typedef struct {
+    tid_t   tid;
     int     state;
     vaddr_t sp;
     uint8_t stack[8192];
-};
+} Task;
 
 struct sbiret {
     long error;

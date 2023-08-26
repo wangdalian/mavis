@@ -4,14 +4,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PAGE_SIZE   4096
-
 // clang extention
 #define align_up(value, align) __builtin_align_up(value, align)
 #define is_aligned(value, align) __builtin_is_aligned(value, align)
-
-typedef uintptr_t paddr_t;
-typedef uintptr_t vaddr_t;
 
 void *memset(void *buf, char c, size_t n);
 void *memcpy(void *dst, const void *src, size_t n);

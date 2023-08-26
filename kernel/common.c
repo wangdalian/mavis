@@ -1,5 +1,4 @@
 #include "common.h"
-#include <stdint.h>
 
 void putchar(char ch);
 
