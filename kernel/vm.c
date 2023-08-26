@@ -442,8 +442,9 @@ int32_t fd_write(
     for(int i = 0; i < iovs_len; i++) {
         iov = *(Iovec *)&ctx->mem->p[iovs];
 
-        // todo: return number of string from puts
-        puts(&ctx->mem->p[iov.base]);
+        // todo: return number of string written
+        // todo: fix this
+        printf(&ctx->mem->p[iov.base]);
 
         iovs += sizeof(Iovec);
     }
