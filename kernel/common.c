@@ -100,24 +100,36 @@ void printf(const char *fmt, ...) {
     va_end(vargs);
 }
 
+extern uint8_t __pmalloc_pool_start[], __pmalloc_pool_end[];
+
+void *pmalloc(uint32_t n) {
+    static uint8_t *next_paddr = __pmalloc_pool_start;
+    uint8_t *paddr = next_paddr;
+    next_paddr += n * PAGE_SIZE;
+
+    if(next_paddr > __pmalloc_pool_end)
+        PANIC("out of memory");
+
+    memset((void *)paddr, 0, n * PAGE_SIZE);
+    return paddr;    
+}
+
 // todo: impl sbrk and free
 extern uint8_t __malloc_pool_start[], __malloc_pool_end[];
 
 void *malloc(size_t size) {
-    static uint8_t *ptr = __malloc_pool_start;
+    static uint8_t *next_ptr = __malloc_pool_start;
+    uint8_t *ptr = next_ptr;
 
-    printf("[+] ptr = 0x%x\n", ptr);
+    if(!is_aligned(next_ptr, 0x10))
+        next_ptr = align_up(next_ptr, 0x10);
 
-    if(!is_aligned(ptr, 0x10))
-        ptr = align_up(ptr, 0x10);
+    next_ptr += size;
     
     // PANIC?
-    if(ptr + size > __malloc_pool_end)
+    if(next_ptr > __malloc_pool_end)
         return NULL;
     
-    printf("[+] alloc mem @0x%x, size = %x\n", ptr, size);
-
-    uint8_t *ret = ptr;
-    ptr += size;
-    return ret;
+    memset(ptr, 0, size);
+    return ptr;
 }

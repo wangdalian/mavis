@@ -126,21 +126,6 @@ void handle_trap(struct trap_fram *f) {
     PANIC("unexpected trap scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
 }
 
-// memory allocator
-extern char __pmalloc_pool_start[], __pmalloc_pool_end[];
-
-paddr_t pmalloc(uint32_t n) {
-    static paddr_t next_paddr = (paddr_t)__pmalloc_pool_start;
-    paddr_t paddr = next_paddr;
-    next_paddr += n * PAGE_SIZE;
-
-    if(next_paddr > (paddr_t) __pmalloc_pool_end)
-        PANIC("out of memory");
-
-    memset((void *)paddr, 0, n * PAGE_SIZE);
-    return paddr;    
-}
-
 Task tasks[NUM_TASK_MAX];
 
 __attribute__((naked)) void switch_context(uint32_t *prev_sp, uint32_t *next_sp) {

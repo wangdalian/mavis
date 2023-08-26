@@ -4,6 +4,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define PANIC(fmt, ...)                                                         \
+    do {                                                                        \
+        printf("PANIC %s:%d " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);     \
+        for(;;)                                                                 \
+            __asm__ __volatile__("wfi");                                        \
+    }while(0)
+
+#define PAGE_SIZE 4096
+
 // clang extention
 #define align_up(value, align) __builtin_align_up(value, align)
 #define is_aligned(value, align) __builtin_is_aligned(value, align)
@@ -14,4 +23,5 @@ char *strcpy(char *dst, const char *src);
 int strcmp(const char *s1, const char *s2);
 void puts(const char *s);
 void printf(const char *fmt, ...);
+void *pmalloc(uint32_t n);
 void *malloc(size_t size);

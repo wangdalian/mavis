@@ -50,22 +50,11 @@ struct trap_frame {
         __asm__ __volatile__("csrw " #reg ", %0" :: "r"(__tmp));                \
     })
 
-#define PANIC(fmt, ...)                                                         \
-    do {                                                                        \
-        printf("PANIC %s:%d " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);     \
-        for(;;)                                                                 \
-            __asm__ __volatile__("wfi");                                        \
-    }while(0)
-
 #define NUM_TASK_MAX    8
 #define TASK_UNUSED     0
 #define TASK_RUNNABLE   1
 #define TASK_EXITED     2
 
-#define PAGE_SIZE       4096
-
-typedef uintptr_t   vaddr_t;
-typedef uintptr_t   paddr_t;
 typedef int         tid_t;
 
 typedef struct {
