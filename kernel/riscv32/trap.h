@@ -1,9 +1,5 @@
 #pragma once
 
-
-#include <stdint.h>
-#include <kernel/common.h>
-
 #define READ_CSR(reg)                                                           \
     ({                                                                          \
         unsigned long __tmp;                                                    \

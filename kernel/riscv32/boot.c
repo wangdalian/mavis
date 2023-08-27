@@ -1,6 +1,9 @@
-#include "boot.h"
+#include <stdint.h>
 
-// __stack_top is defined in the linker script of kernel. see kernel/kernel.ld
+/*
+boot.c defines the boot function, which is the entry point of the kernel.
+__stack_top is defined in the linker script of kernel. see kernel/kernel.ld
+*/
 
 extern uint8_t __stack_top[];
 

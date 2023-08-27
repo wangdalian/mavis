@@ -1,4 +1,7 @@
 #include "task.h"
+#include "arch.h"
+#include "common.h"
+#include "vm.h"
 
 static struct task tasks[NUM_TASK_MAX];
 struct task *current_task;

@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "common.h"
 
 typedef struct {
     int cursor;

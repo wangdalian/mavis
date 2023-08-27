@@ -1,4 +1,6 @@
 #include "vm.h"
+#include "common.h"
+#include "env.h"
 
 LocalValue *createLocalValue(ValType ty) {
     LocalValue *val = malloc(sizeof(LocalValue));

@@ -1,5 +1,14 @@
 #include "kernel.h"
 
+#include <stdint.h>
+
+#include "common.h"
+#include "vm.h"
+#include "buffer.h"
+#include "module.h"
+#include "task.h"
+#include "arch.h"
+
 extern char __bss[], __bss_end[], __stack_top[];
 
 extern uint8_t __hello_start[];

@@ -1,5 +1,8 @@
 #include "trap.h"
 
+#include <stdint.h>
+#include <kernel/common.h>
+
 typedef struct __attribute__((packed)) {
     uint32_t ra;
     uint32_t gp;

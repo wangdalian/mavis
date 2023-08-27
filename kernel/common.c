@@ -1,4 +1,6 @@
 #include "common.h"
+#include <stdarg.h>
+#include <stdint.h>
 
 void *memset(void *buf, char c, size_t n) {
     uint8_t *p = buf;

@@ -1,9 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include "arch.h"
-#include "common.h"
-#include "vm.h"
 
 #define NUM_TASK_MAX    8
 #define TASK_UNUSED     0

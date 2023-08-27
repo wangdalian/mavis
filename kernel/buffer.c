@@ -1,4 +1,5 @@
 #include "buffer.h"
+#include "common.h"
 
 Buffer *newBuffer(uint8_t *p, int len) {
     Buffer *buf = malloc(sizeof(Buffer));
