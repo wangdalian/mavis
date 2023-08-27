@@ -8,7 +8,6 @@
 #include "buffer.h"
 #include "list.h"
 #include "common.h"
-#include "kernel.h"
 
 typedef struct {
     uint8_t ty;

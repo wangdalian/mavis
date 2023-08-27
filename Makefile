@@ -24,7 +24,7 @@ all_servers := $(notdir $(patsubst %/main.S, %, $(wildcard servers/*/main.S)))
 build: servers $(kernel_elf)
 
 # object files required to build the kernel
-objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o) \
+objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o task.o) \
 		$(foreach s, $(all_servers), $(addprefix $(BUILD_DIR)/servers/$(s)/, main.o))
 
 # rules for building kernel

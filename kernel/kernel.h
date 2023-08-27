@@ -5,6 +5,7 @@
 #include "vm.h"
 #include "buffer.h"
 #include "module.h"
+#include "task.h"
 
 struct trap_frame {
     uint32_t ra;
@@ -53,24 +54,7 @@ struct trap_frame {
         __asm__ __volatile__("csrw " #reg ", %0" :: "r"(__tmp));                \
     })
 
-#define NUM_TASK_MAX    8
-#define TASK_UNUSED     0
-#define TASK_RUNNABLE   1
-#define TASK_EXITED     2
-
-typedef int         tid_t;
-
-typedef struct {
-    tid_t       tid;
-    int         state;
-    uint32_t    sp;
-    uint8_t     stack[8192];
-} Task;
-
 struct sbiret {
     long error;
     long value;
 };
-
-
-void exit(int32_t code);
