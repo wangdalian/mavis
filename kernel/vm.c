@@ -19,7 +19,6 @@ WasmFunc * createImportedFunc(WasmModule *m, int idx) {
 
     int num_params = ty->rt1->n;
     WasmFunc *wasmf = malloc(sizeof(WasmFunc) + sizeof(LocalValue *) * num_params);
-    printf("[+] wasmf = %x\n", wasmf);
     *wasmf = (WasmFunc) {
         .ty         = ty,
         .imported   = true,
@@ -71,22 +70,22 @@ WasmFunc *createDefinedFunc(WasmModule *m, int idx) {
 }
 
 void enterBlock(Context *ctx, Instr *instr) {
-    puts("[+] enter block");
+    //puts("[+] enter block");
     list_push_back(&ctx->blocks, &instr->link_block);
 }
 
 void exitBlock(Context *ctx) {
-    puts("[+] exit block");
+    //puts("[+] exit block");
     list_pop_tail(&ctx->blocks);
 }
 
 void enterFrame(Context *ctx, WasmFunc *f) {
-    puts("[+] enter frame");
+    //puts("[+] enter frame");
     list_push_back(&ctx->call_stack, &f->link);
 }
 
 void exitFrame(Context *ctx) {
-    puts("[+] exit frame");
+    //puts("[+] exit frame");
     list_pop_tail(&ctx->call_stack);
 }
 
@@ -212,8 +211,8 @@ Instr *invokeI(Context *ctx, Instr *ip) {
     // get current func
     WasmFunc *func = LIST_CONTAINER(list_tail(&ctx->call_stack), WasmFunc, link);
    
-    printf("[+] ip = ");
-    printInstr(ip);
+    //printf("[+] ip = ");
+    //printInstr(ip);
 
     switch(ip->op) {
         case I32Const:
@@ -405,7 +404,6 @@ Context *createContext(WasmModule *m) {
     if(m->memsec) {
         // allocate one page for now
         uint8_t *page = pmalloc(1);
-        printf("[+] page = %x\n", page);
         ctx->mem = newBuffer(page, 4096);
         // init mem if datasec is defined
         if(m->datasec) {

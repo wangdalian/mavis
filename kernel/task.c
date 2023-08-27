@@ -1,6 +1,8 @@
 #include "task.h"
 #include "arch.h"
 #include "common.h"
+#include "list.h"
+#include "memory.h"
 #include "vm.h"
 
 static struct task tasks[NUM_TASK_MAX];
@@ -19,6 +21,12 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
 
     if (!task)
         PANIC("no free process slots");
+    
+    // init malloc_pool
+    LIST_INIT(&task->malloc_pool.pages);
+    struct page *page = pmalloc(1);
+    list_push_back(&task->malloc_pool.pages, &page->link);
+    task->malloc_pool.next_ptr = align_up(page->base, 0x10);
 
     arch_task_init(task, ip, arg);
 
@@ -49,6 +57,23 @@ void yield(void) {
 
 __attribute__((noreturn))
 void task_exit(int32_t code) {
+    for(;;) {
+        // LIST_FOR_EACH macro cannot be used because pfree breaks the list structure.
+        struct page *page = LIST_CONTAINER(
+            list_tail(&current_task->malloc_pool.pages),
+            struct page, 
+            link
+        );
+        list_pop_tail(&current_task->malloc_pool.pages);
+
+        if(!page)
+            break;
+        
+        pfree(page);
+    }
+
+    LIST_INIT(&current_task->malloc_pool.pages);
+
     printf("task exited normally: tid = %x, code = %x\n", current_task->tid, code);
     current_task->state = TASK_EXITED;
     yield();
