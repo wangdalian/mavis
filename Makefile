@@ -28,7 +28,7 @@ build: servers $(kernel_elf)
 arch_obj := $(BUILD_DIR)/kernel/$(ARCH).o
 
 # object files required to build the kernel
-objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o task.o) \
+objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o task.o env.o) \
 		$(foreach s, $(all_servers), $(addprefix $(BUILD_DIR)/servers/$(s)/, main.o)) \
 		$(arch_obj)
 
@@ -39,7 +39,7 @@ $(kernel_elf): LDFLAGS := -T$(linker_script)
 $(kernel_elf): $(objs) $(linker_script)
 	$(LD) $(LDFLAGS) -Map $(@:.elf=.map) -o $@ $(OBJS)
 
-$(arch_obj): $(addprefix $(BUILD_DIR)/kernel/$(ARCH)/, boot.o common.o task.o trap.o)
+$(arch_obj): $(addprefix $(BUILD_DIR)/kernel/$(ARCH)/, boot.o common.o task.o trap.o )
 	$(MKDIR) -p $(@D)
 	$(LD) -r -o $@ $^ 
 

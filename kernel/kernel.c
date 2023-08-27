@@ -34,7 +34,7 @@ prompt:
             yield();
         }
         else if (strcmp(cmdline, "exit") == 0)
-            exit(0);
+            task_exit(0);
         else
             printf("unknown command: %s\n", cmdline);
     }

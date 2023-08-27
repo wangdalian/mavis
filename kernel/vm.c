@@ -16,7 +16,7 @@ WasmFunc * createImportedFunc(WasmModule *m, int idx) {
 
     int num_params = ty->rt1->n;
     WasmFunc *wasmf = malloc(sizeof(WasmFunc) + sizeof(LocalValue *) * num_params);
-
+    printf("[+] wasmf = %x\n", wasmf);
     *wasmf = (WasmFunc) {
         .ty         = ty,
         .imported   = true,
@@ -402,6 +402,7 @@ Context *createContext(WasmModule *m) {
     if(m->memsec) {
         // allocate one page for now
         uint8_t *page = pmalloc(1);
+        printf("[+] page = %x\n", page);
         ctx->mem = newBuffer(page, 4096);
         // init mem if datasec is defined
         if(m->datasec) {
@@ -484,7 +485,7 @@ int32_t invokeExternal(Context *ctx, WasmFunc *f) {
 
     if(strcmp(f->modName, "env") == 0) {
         if(strcmp(f->name, "exit") == 0) {
-            exit(f->locals[0]->val.i32);
+            env_exit(f->locals[0]->val.i32);
         }
     }
 

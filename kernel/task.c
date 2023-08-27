@@ -25,6 +25,7 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
     return task;
 }
 
+// todo: create shedule function
 void yield(void) {
     struct task *next = idle_task;
     for (int i = 0; i < NUM_TASK_MAX; i++) {
@@ -43,9 +44,11 @@ void yield(void) {
     arch_task_switch(&prev->sp, &next->sp);
 }
 
-void exit(int32_t code) {
+__attribute__((noreturn))
+void task_exit(int32_t code) {
     printf("task exited normally: tid = %x, code = %x\n", current_task->tid, code);
     current_task->state = TASK_EXITED;
     yield();
     PANIC("unreachable");
+    __builtin_unreachable();
 }

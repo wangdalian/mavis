@@ -125,16 +125,17 @@ extern uint8_t __malloc_pool_start[], __malloc_pool_end[];
 
 void *malloc(size_t size) {
     static uint8_t *next_ptr = __malloc_pool_start;
+
+    next_ptr = align_up(next_ptr, 0x10);
+
     uint8_t *ptr = next_ptr;
 
-    if(!is_aligned(next_ptr, 0x10))
-        next_ptr = align_up(next_ptr, 0x10);
-
     next_ptr += size;
-    
-    // PANIC?
-    if(next_ptr > __malloc_pool_end)
+
+    if(next_ptr > __malloc_pool_end) {
+        PANIC("out of malloc pool");
         return NULL;
+    }
     
     memset(ptr, 0, size);
     return ptr;
