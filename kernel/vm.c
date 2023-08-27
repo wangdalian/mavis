@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "memory.h"
 #include "common.h"
 #include "env.h"
 

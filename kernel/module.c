@@ -1,5 +1,5 @@
 #include "module.h"
-#include "common.h"
+#include "memory.h"
 
 ValType * parseValType(Buffer *buf) {
     ValType *valTy = malloc(sizeof(ValType));

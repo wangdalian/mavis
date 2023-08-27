@@ -28,7 +28,7 @@ build: servers $(kernel_elf)
 arch_obj := $(BUILD_DIR)/kernel/$(ARCH).o
 
 # object files required to build the kernel
-objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o task.o env.o) \
+objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o task.o env.o memory.o) \
 		$(foreach s, $(all_servers), $(addprefix $(BUILD_DIR)/servers/$(s)/, main.o)) \
 		$(arch_obj)
 

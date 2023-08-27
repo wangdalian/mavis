@@ -23,5 +23,3 @@ void putchar(char ch);
 char getchar(void);
 void puts(const char *s);
 void printf(const char *fmt, ...);
-void *pmalloc(uint32_t n);
-void *malloc(size_t size);
