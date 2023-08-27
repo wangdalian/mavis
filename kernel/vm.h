@@ -29,12 +29,12 @@ typedef struct {
 } WasmFunc;
 
 typedef struct {
-    Buffer      *stack;
-    Buffer      *mem;
-    Instr       *ip;
-    list_t      call_stack;
-    list_t      blocks;
-    WasmFunc    *funcs[];
+    Buffer          *stack;
+    Buffer          *mem;
+    Instr           *entry;
+    list_t          call_stack;
+    list_t          blocks;
+    WasmFunc        *funcs[];
 } Context;
 
 Context *createContext(WasmModule *m);

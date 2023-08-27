@@ -2,7 +2,7 @@
 
 static void list_insert(list_elem_t *prev, list_elem_t *next, list_elem_t *new) {
     new->prev = prev;
-    new->next = NULL;
+    new->next = next;
     next->prev = new;
     prev->next = new;
 }

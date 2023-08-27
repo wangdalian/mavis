@@ -68,18 +68,31 @@ WasmFunc *createDefinedFunc(WasmModule *m, int idx) {
 }
 
 void enterBlock(Context *ctx, Instr *instr) {
-    //puts("[+] enter block");
+    puts("[+] enter block");
     list_push_back(&ctx->blocks, &instr->link_block);
 }
 
 void exitBlock(Context *ctx) {
-    //puts("[+] exit block");
+    puts("[+] exit block");
     list_pop_tail(&ctx->blocks);
 }
 
+void enterFrame(Context *ctx, WasmFunc *f) {
+    puts("[+] enter frame");
+    list_push_back(&ctx->call_stack, &f->link);
+}
+
+void exitFrame(Context *ctx) {
+    puts("[+] exit frame");
+    list_pop_tail(&ctx->call_stack);
+}
+
 Instr * branchIn(Context *ctx, int idx) {
+    if(list_tail(&ctx->blocks) == NULL) {
+        return NULL;
+    }
+
     // todo: check block`s existence
-    // todo: support if block?
 
     // exit blocks
     while(idx--) {
@@ -91,6 +104,21 @@ Instr * branchIn(Context *ctx, int idx) {
     Instr *instr = LIST_CONTAINER(block, Instr, link_block);
 
     switch(instr->op) {
+        case Call:
+            exitBlock(ctx);
+            exitFrame(ctx);
+            return LIST_CONTAINER(
+                instr->link.next,
+                Instr,
+                link
+            );
+        case If:
+            exitBlock(ctx);
+            return LIST_CONTAINER(
+                instr->link.next,
+                Instr,
+                link
+            );
         case Loop:
             return LIST_CONTAINER(
                 list_head(&instr->block.instrs),
@@ -106,10 +134,11 @@ Instr * branchIn(Context *ctx, int idx) {
                 link
             );
         }
-    }
 
-    // unexpected block
-    return NULL;
+        // unexpected block
+        default:
+            return NULL;
+    }
 }
 
 static void printInstr(Instr *instr) {
@@ -172,35 +201,27 @@ static void printInstr(Instr *instr) {
     }   
 }
 
-void enterFrame(Context *ctx, WasmFunc *f) {
-    //puts("[+] enter frame");
-    list_push_back(&ctx->call_stack, &f->link);
-}
+Instr *invokeF(Context *ctx, WasmFunc *f);
 
-void exitFrame(Context *ctx) {
-    //puts("[+] exit frame");
-    list_pop_tail(&ctx->call_stack);
-}
-
-int32_t invokeF(Context *ctx, WasmFunc *f);
-
-Instr * invokeI(Context *ctx, Instr *instr) {
+Instr *invokeI(Context *ctx, Instr *ip) {
+    Instr *next_ip = LIST_CONTAINER(ip->link.next, Instr , link);
+    
     // get current func
     WasmFunc *func = LIST_CONTAINER(list_tail(&ctx->call_stack), WasmFunc, link);
-
+   
     printf("[+] ip = ");
-    printInstr(ctx->ip);
+    printInstr(ip);
 
-    switch(instr->op) {
+    switch(ip->op) {
         case I32Const:
-            writeI32(ctx->stack, instr->i32Const.n);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            writeI32(ctx->stack, ip->i32Const.n);
+            break;
         
         case I32Add: {
             int32_t rhs = readI32(ctx->stack);
             int32_t lhs = readI32(ctx->stack);
             writeI32(ctx->stack, lhs + rhs);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         }
 
         case I32Rem_s: {
@@ -208,95 +229,87 @@ Instr * invokeI(Context *ctx, Instr *instr) {
             int32_t rhs = readI32(ctx->stack);
             int32_t lhs = readI32(ctx->stack);
             writeI32(ctx->stack, lhs % rhs);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         }
 
         case I32Lt_s: {
             int32_t rhs = readI32(ctx->stack);
             int32_t lhs = readI32(ctx->stack);
             writeI32(ctx->stack, lhs < rhs);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         }
 
         case I32Ge_s: {
             int32_t rhs = readI32(ctx->stack);
             int32_t lhs = readI32(ctx->stack);
             writeI32(ctx->stack, lhs >= rhs);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         }
 
         case I32Eqz: {
             int32_t c = readI32(ctx->stack);
             writeI32(ctx->stack, c == 0);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         }
 
         case LocalGet: {
             writeI32(
                 ctx->stack, 
-                func->locals[instr->localGet.localIdx]->val.i32
+                func->locals[ip->localGet.localIdx]->val.i32
             );
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         }
 
         case LocalSet: {
             int32_t val = readI32(ctx->stack);
-            func->locals[instr->localSet.localIdx]->val.i32 = val;
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            func->locals[ip->localSet.localIdx]->val.i32 = val;
+            break;
         }
 
         case Call: {
-            int32_t ret = invokeF(ctx, ctx->funcs[instr->call.funcIdx]);
-            if(ret)
-                writeI32(ctx->stack, ret);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            enterBlock(ctx, ip);
+            next_ip = invokeF(ctx, ctx->funcs[ip->call.funcIdx]);
+            break;
         }
 
         case If: {
-            enterBlock(ctx, instr);
+            enterBlock(ctx, ip);
             int32_t cond = readI32(ctx->stack);
             if(cond) {
-                ctx->ip = LIST_CONTAINER(
-                    list_head(&instr->If.thenInstrs),
+                next_ip = LIST_CONTAINER(
+                    list_head(&ip->If.thenInstrs),
                     Instr,
                     link
                 );
-
-                while(ctx->ip->op != Else) {
-                    ctx->ip = invokeI(ctx, ctx->ip);
-                }
             } else {
-                ctx->ip = LIST_CONTAINER(
-                    list_head(&instr->If.elseInstrs),
+                next_ip = LIST_CONTAINER(
+                    list_head(&ip->If.elseInstrs),
                     Instr,
                     link
                 );
-
-                while(ctx->ip->op != End) {
-                    ctx->ip = invokeI(ctx, ctx->ip);
-                }
             }
-            exitBlock(ctx);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         }
 
         case Block:
         case Loop:
-            enterBlock(ctx, instr);
-            return LIST_CONTAINER(
-                list_head(&instr->block.instrs),
+            enterBlock(ctx, ip);
+            next_ip = LIST_CONTAINER(
+                list_head(&ip->block.instrs),
                 Instr,
                 link
             );
-        
+            break;
+
         case Br:
-            return branchIn(ctx, instr->br.labelIdx);
+            next_ip = branchIn(ctx, ip->br.labelIdx);
+            break;
         
         case BrIf: {
             int32_t cond = readI32(ctx->stack);
             if(cond)
-                return branchIn(ctx, instr->br.labelIdx);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+                next_ip = branchIn(ctx, ip->br.labelIdx);
+            break;
         }
 
         case I32Store: {
@@ -308,30 +321,36 @@ Instr * invokeI(Context *ctx, Instr *instr) {
             int32_t val = readI32(ctx->stack);
             int32_t offs = readI32(ctx->stack);
             storeI32(ctx->mem, offs, val);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         }
 
         case Nop:
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
 
         case Drop:
             readI32(ctx->stack);
-            return LIST_CONTAINER(instr->link.next, Instr , link);
+            break;
         
-        case End: {
-            return NULL;
+        case End: 
+        case Else:{
+            next_ip =  branchIn(ctx, 0);
+            break;
+        
+        default:
+            next_ip = NULL;
+            break;
         }
     }
 
-    // unexpected instruction
-    return NULL;
+    return next_ip;
 }
 
 void run_vm(Context *ctx) {
-    // todo: fix this
-    while(ctx->ip->op != End) {
-        ctx->ip = invokeI(ctx, ctx->ip);
-    }
+    // todo: add entry to task struct
+    Instr *ip = ctx->entry;
+
+    while(ip)
+        ip = invokeI(ctx, ip);
 }
 
 Context *createContext(WasmModule *m) {
@@ -344,7 +363,7 @@ Context *createContext(WasmModule *m) {
     // _start function required
     Section *exportsec = m->exportsec;
     Export *export = NULL;
-    
+
     for(int i = 0; i < exportsec->exports.n; i++) {
         Export *e = exportsec->exports.x[i];
         if(e->exportDesc->kind == 0 && strcmp(e->name, "_start") == 0) {
@@ -392,10 +411,9 @@ Context *createContext(WasmModule *m) {
 
                 if(data->kind == 0) {
                     // get offs(constant expr expected)
-                    ctx->ip = LIST_CONTAINER(list_head(&data->expr), Instr, link);
-                    do {
-                        ctx->ip = invokeI(ctx, ctx->ip);
-                    } while(ctx->ip->op != End);
+                    Instr *ip = LIST_CONTAINER(list_head(&data->expr), Instr, link);
+                    while(ip)
+                        ip = invokeI(ctx, ip);
 
                     int32_t offs = readI32(ctx->stack);
 
@@ -419,7 +437,7 @@ Context *createContext(WasmModule *m) {
 
     // set entry & ip
     WasmFunc *start = ctx->funcs[export->exportDesc->idx];
-    ctx->ip = LIST_CONTAINER(list_head(start->codes), Instr, link);
+    ctx->entry = LIST_CONTAINER(list_head(start->codes), Instr, link);
 
     return ctx;
 }
@@ -452,12 +470,6 @@ int32_t fd_write(
 }
 
 int32_t invokeExternal(Context *ctx, WasmFunc *f) {
-    // set args
-     for(int i = f->ty->rt1->n - 1; i >= 0; i--) {
-        // todo: validate type
-        f->locals[i]->val.i32 = readI32(ctx->stack);
-    }
-
     // import from another wasm binary is not supported yet
     if((strcmp(f->modName, "wasi_unstable") == 0) && \
        (strcmp(f->name, "fd_write") == 0)) {
@@ -479,33 +491,26 @@ int32_t invokeExternal(Context *ctx, WasmFunc *f) {
     return 0;
 }
 
-int32_t invokeInternal(Context *ctx, WasmFunc *f) {
+Instr *invokeF(Context *ctx, WasmFunc *f) {
     enterFrame(ctx, f);
+    
     // set args
     for(int i = f->ty->rt1->n - 1; i >= 0; i--) {
         // todo: validate type
         f->locals[i]->val.i32 = readI32(ctx->stack);
     }
 
-    // exec
-    ctx->ip = LIST_CONTAINER(list_head(f->codes), Instr, link);
-    while(ctx->ip->op != End) {
-        ctx->ip = invokeI(ctx, ctx->ip);
+    for(int i = 0; i < f->ty->rt1->n; i++) {
+        printf("[+] arg %d = %d\n", i, f->locals[i]->val.i32);
     }
 
-    int32_t ret = 0;
-
-    if(f->ty->rt2->n)
-        ret = readI32(ctx->stack);
-
-    exitFrame(ctx);
-    return ret;
-}
-
-// todo: fix return type
-int32_t invokeF(Context *ctx, WasmFunc *f) {
-    if(f->imported)
-        return invokeExternal(ctx, f);
-    else
-        return invokeInternal(ctx, f);
+    if(f->imported) {
+        int32_t ret = invokeExternal(ctx, f);
+        if(f->ty->rt2->n)
+            writeI32(ctx->stack, ret);
+        return branchIn(ctx, 0);
+    }
+    else {
+        return LIST_CONTAINER(list_head(f->codes), Instr, link);
+    }
 }

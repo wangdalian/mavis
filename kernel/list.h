@@ -21,7 +21,7 @@ typedef list list_elem_t;
 
 #define LIST_FOR_EACH(elem, list, container, field)                                         \
     for (container *elem = LIST_CONTAINER((list)->next, container, field);                  \
-        (list)->next != (list) && elem ;                                                    \
+        &elem->field != (list);                                                             \
         elem = LIST_CONTAINER(elem->field.next, container, field))
 
 void list_push_back(list_t *list, list_elem_t *elem);
