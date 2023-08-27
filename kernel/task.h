@@ -1,7 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include "vm.h"
+#include "arch.h"
+#include "common.h"
 
 #define NUM_TASK_MAX    8
 #define TASK_UNUSED     0
@@ -10,17 +11,13 @@
 
 typedef int         tid_t;
 
-typedef struct {
+struct task {
     tid_t       tid;
     int         state;
     uint32_t    sp;
     uint8_t     stack[8192];
+};
 
-    // used if vm task
-    Context     *ctx;
-} Task;
-
-Task *create_vm_task(Context *ctx);
-Task *create_task(uint32_t pc);
+struct task *create_task(uint32_t ip, uint32_t *arg);
 void yield(void);
 void exit(int32_t code);

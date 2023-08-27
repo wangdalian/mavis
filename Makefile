@@ -10,9 +10,11 @@ WAT2WASM := wat2wasm
 
 # flags
 CFLAGS :=-std=c11 -O2 -g3 -Wall -Wextra --target=riscv32 -ffreestanding -nostdlib
+CFLAGS += -I$(shell pwd)
 QEMUFLAGS := -machine virt -bios default -nographic -serial mon:stdio --no-reboot
 
 # build settings
+ARCH := riscv32
 BUILD_DIR ?= build
 
 kernel_elf = $(BUILD_DIR)/kernel.elf
@@ -23,9 +25,12 @@ all_servers := $(notdir $(patsubst %/main.S, %, $(wildcard servers/*/main.S)))
 .PHONY: build
 build: servers $(kernel_elf)
 
+arch_obj := $(BUILD_DIR)/kernel/$(ARCH).o
+
 # object files required to build the kernel
 objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o task.o) \
-		$(foreach s, $(all_servers), $(addprefix $(BUILD_DIR)/servers/$(s)/, main.o))
+		$(foreach s, $(all_servers), $(addprefix $(BUILD_DIR)/servers/$(s)/, main.o)) \
+		$(arch_obj)
 
 # rules for building kernel
 linker_script := $(BUILD_DIR)/kernel/kernel.ld
@@ -33,6 +38,10 @@ $(kernel_elf): OBJS := $(objs)
 $(kernel_elf): LDFLAGS := -T$(linker_script)
 $(kernel_elf): $(objs) $(linker_script)
 	$(LD) $(LDFLAGS) -Map $(@:.elf=.map) -o $@ $(OBJS)
+
+$(arch_obj): $(addprefix $(BUILD_DIR)/kernel/$(ARCH)/, boot.o common.o task.o trap.o)
+	$(MKDIR) -p $(@D)
+	$(LD) -r -o $@ $^ 
 
 $(BUILD_DIR)/%.o: %.c
 	$(MKDIR) -p $(@D)

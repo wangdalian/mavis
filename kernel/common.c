@@ -1,7 +1,5 @@
 #include "common.h"
 
-void putchar(char ch);
-
 void *memset(void *buf, char c, size_t n) {
     uint8_t *p = buf;
     while(n--)
@@ -34,6 +32,14 @@ int strcmp(const char *s1, const char *s2) {
     }
 
     return *s1 - *s2;
+}
+
+void putchar(char ch) {
+    arch_putchar(ch);
+}
+
+char getchar(void) {
+    return arch_getchar();
 }
 
 void puts(const char *s) {
