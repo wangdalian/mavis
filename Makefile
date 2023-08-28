@@ -8,16 +8,17 @@ OBJCOPY  := llvm-objcopy
 QEMU := qemu-system-riscv32
 WAT2WASM := wat2wasm
 
-# flags
-CFLAGS :=-std=c11 -O2 -g3 -Wall -Wextra --target=riscv32 -ffreestanding -nostdlib
-CFLAGS += -I$(shell pwd)
-QEMUFLAGS := -machine virt -bios default -nographic -serial mon:stdio --no-reboot
-
 # build settings
 ARCH := riscv32
 BUILD_DIR ?= build
 
 kernel_elf = $(BUILD_DIR)/kernel.elf
+
+# flags
+CFLAGS :=-std=c11 -O2 -g3 -Wall -Wextra --target=riscv32 -ffreestanding -nostdlib
+CFLAGS += -I$(shell pwd)
+CFLAGS += -Ikernel/$(ARCH)
+QEMUFLAGS := -machine virt -bios default -nographic -serial mon:stdio --no-reboot
 
 # servers
 all_servers := $(notdir $(patsubst %/main.S, %, $(wildcard servers/*/main.S)))

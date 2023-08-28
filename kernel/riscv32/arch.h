@@ -1,8 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-
-struct task;
+#include <kernel/task.h>
 
 void arch_putchar(char ch);
 char arch_getchar(void);
