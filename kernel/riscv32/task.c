@@ -1,6 +1,8 @@
+#include "include/arch_types.h"
 #include <arch_types.h>
 #include <kernel/task.h>
 #include <kernel/memory.h>
+#include <stdint.h>
 
 __attribute__((naked)) 
 void arch_context_switch(uint32_t *prev_sp, uint32_t *next_sp) {
@@ -56,7 +58,7 @@ static void arch_task_entry(void) {
     );
 }
 
-void arch_task_init(struct task *task, uint32_t ip, uint32_t *arg) {
+void arch_task_init(struct task *task, uint32_t ip, void *arg) {
     
     // todo: define paddr_t
     uint32_t stack_bottom = (uint32_t)pmalloc(1);
@@ -92,5 +94,16 @@ void arch_task_init(struct task *task, uint32_t ip, uint32_t *arg) {
         .sp             = (uint32_t)sp,
         .stack_bottom   = (uint32_t)stack_bottom,
         .stack_top      = (uint32_t)stack_top
+    };
+}
+
+// free kernel stack
+void arch_task_exit(struct task *task) {
+    pfree((void *)task->arch.stack_bottom);
+
+    task->arch = (struct arch_task) {
+        .sp             = 0,
+        .stack_bottom   = 0,
+        .stack_top      = 0
     };
 }

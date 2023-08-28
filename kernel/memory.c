@@ -22,7 +22,7 @@ void *pmalloc(uint32_t n) {
     list_pop_tail(&free_pages);
 
     if(page) {
-         printf("[+] pmalloc %x\n", page);
+        printf("[+] pmalloc %x\n", page);
         return page;
     }
 
@@ -42,6 +42,7 @@ void *pmalloc(uint32_t n) {
 
 void pfree(void *page) {
     printf("[-] pfree %x\n", page);
+    // The top of the free page is no longer used, so it is used as a header.
     list_push_back(&free_pages, &((struct page *)page)->link);
 }
 

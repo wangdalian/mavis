@@ -4,6 +4,7 @@
 #include <arch_types.h>
 #include "memory.h"
 #include "buffer.h"
+#include "vm.h"
 
 #define NUM_TASK_MAX    8
 #define TASK_UNUSED     0
@@ -17,6 +18,12 @@ struct task {
     int                 state;
     struct arch_task    arch;
     struct malloc_pool  malloc_pool;
+
+    /*
+    Used if vm_task. It is initialized by the launch_vm_task function.
+    If launch fails, the "vm_task" needs to exit, so it must be initialized after the task has been executed.
+    */
+    Context             *ctx;
 };
 
 struct task *create_task(uint32_t ip, uint32_t *arg);

@@ -1,6 +1,7 @@
 #include "task.h"
 #include "arch.h"
 #include "common.h"
+#include "memory.h"
 #include "vm.h"
 #include "list.h"
 
@@ -20,8 +21,12 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
 
     if (!task)
         PANIC("no free process slots");
-    
+
+    // init ctx
+    task->ctx = NULL;
+
     // init malloc_pool
+    // In the current implementation, the top of the page is used as the header.
     LIST_INIT(&task->malloc_pool.pages);
     struct page *page = pmalloc(1);
     list_push_back(&task->malloc_pool.pages, &page->link);
@@ -40,9 +45,8 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
 // this is entry point of vm_task
 void launch_vm_task(Buffer *buf) {
     WasmModule *m = newWasmModule(buf);
-    Context *ctx = createContext(m);
-
-    run_vm(ctx);
+    current_task->ctx = createContext(m);
+    run_vm(current_task->ctx);
 }
 
 // todo: create shedule function
@@ -66,6 +70,14 @@ void yield(void) {
 
 __attribute__((noreturn))
 void task_exit(int32_t code) {
+    // If vm_task, free the memory that was being used.
+    if(current_task->ctx) {
+        Context *ctx = current_task->ctx;
+        pfree(ctx->stack->p);
+        pfree(ctx->mem->p);
+    }
+
+    // free malloc_pool
     for(;;) {
         // LIST_FOR_EACH macro cannot be used because pfree breaks the list structure.
         struct page *page = LIST_CONTAINER(
@@ -80,9 +92,11 @@ void task_exit(int32_t code) {
         
         pfree(page);
     }
-
     LIST_INIT(&current_task->malloc_pool.pages);
 
+    // free kernel stack
+    arch_task_exit(current_task);
+    
     printf("task exited normally: tid = %x, code = %x\n", current_task->tid, code);
     current_task->state = TASK_EXITED;
     yield();
