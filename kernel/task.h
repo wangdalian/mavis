@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <arch_types.h>
 #include "memory.h"
+#include "buffer.h"
 
 #define NUM_TASK_MAX    8
 #define TASK_UNUSED     0
@@ -19,5 +20,6 @@ struct task {
 };
 
 struct task *create_task(uint32_t ip, uint32_t *arg);
+void launch_vm_task(Buffer *buf);
 void yield(void);
 void task_exit(int32_t code);

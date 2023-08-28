@@ -3,11 +3,8 @@
 #include <stdint.h>
 
 #include "common.h"
-#include "vm.h"
 #include "buffer.h"
-#include "module.h"
 #include "task.h"
-#include "arch.h"
 
 extern char __bss[], __bss_end[], __stack_top[];
 
@@ -37,9 +34,7 @@ prompt:
         if (strcmp(cmdline, "hello") == 0) {
             // todo: fix this.
             Buffer *buf = newBuffer(__hello_start, __hello_size[0]);
-            WasmModule *m = newWasmModule(buf);
-            Context *ctx = createContext(m);
-            create_task((uint32_t)run_vm, (uint32_t *)ctx);
+            create_task((uint32_t)launch_vm_task, (uint32_t *)buf);
             yield();
         }
         else if (strcmp(cmdline, "exit") == 0)

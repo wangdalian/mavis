@@ -1,6 +1,7 @@
 #include "task.h"
 #include "arch.h"
 #include "common.h"
+#include "vm.h"
 #include "list.h"
 
 static struct task tasks[NUM_TASK_MAX];
@@ -26,12 +27,22 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
     list_push_back(&task->malloc_pool.pages, &page->link);
     task->malloc_pool.next_ptr = align_up(page->base, 0x10);
 
+    // init stack
     arch_task_init(task, ip, arg);
 
     task->tid = i + 1;
     task->state = TASK_RUNNABLE;
     
     return task;
+}
+
+// todo: impl file system and fix this
+// this is entry point of vm_task
+void launch_vm_task(Buffer *buf) {
+    WasmModule *m = newWasmModule(buf);
+    Context *ctx = createContext(m);
+
+    run_vm(ctx);
 }
 
 // todo: create shedule function
