@@ -444,49 +444,14 @@ Context *createContext(WasmModule *m) {
     return ctx;
 }
 
-// WASI
-typedef struct {
-    uint32_t    base;
-    uint32_t    len;
-} Iovec;
-
-int32_t fd_write(
-    Context *ctx, 
-    int32_t fd, 
-    int32_t iovs, 
-    int32_t iovs_len, 
-    int32_t nwitten
-) { 
-    Iovec iov;
-    int n = 0;
-    for(int i = 0; i < iovs_len; i++) {
-        iov = *(Iovec *)&ctx->mem->p[iovs];
-
-        // todo: return number of string written
-        // todo: fix this
-        printf(&ctx->mem->p[iov.base]);
-
-        iovs += sizeof(Iovec);
-    }
-    return n;
-}
-
 int32_t invokeExternal(Context *ctx, WasmFunc *f) {
     // import from another wasm binary is not supported yet
-    if((strcmp(f->modName, "wasi_unstable") == 0) && \
-       (strcmp(f->name, "fd_write") == 0)) {
-        return fd_write(
-            ctx, 
-            f->locals[0]->val.i32, 
-            f->locals[1]->val.i32,
-            f->locals[2]->val.i32, 
-            f->locals[3]->val.i32
-        );
-    }
-
     if(strcmp(f->modName, "env") == 0) {
         if(strcmp(f->name, "exit") == 0) {
             env_exit(f->locals[0]->val.i32);
+        }
+        if(strcmp(f->name, "puts") == 0) {
+            env_puts(f->locals[0]->val.i32);
         }
     }
 

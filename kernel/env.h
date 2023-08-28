@@ -12,3 +12,4 @@ See servers/hello/main.wat for more details.
 #include <stdint.h>
 
 void env_exit(int32_t code);
+void env_puts(int32_t addr);
