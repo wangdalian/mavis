@@ -1,7 +1,9 @@
-#include "task.h"
+#include <arch_types.h>
+#include <kernel/task.h>
+#include <kernel/memory.h>
 
 __attribute__((naked)) 
-void arch_task_switch(uint32_t *prev_sp, uint32_t *next_sp) {
+void arch_context_switch(uint32_t *prev_sp, uint32_t *next_sp) {
      __asm__ __volatile__(
         "addi sp, sp, -13 * 4\n"
         "sw ra,  0  * 4(sp)\n"
@@ -37,6 +39,10 @@ void arch_task_switch(uint32_t *prev_sp, uint32_t *next_sp) {
     );
 }
 
+void arch_task_switch(struct task *prev, struct task *next) {
+    arch_context_switch(&prev->arch.sp, &next->arch.sp);
+}
+
 __attribute__((naked))
 static void arch_task_entry(void) {
     __asm__ __volatile__(
@@ -51,7 +57,12 @@ static void arch_task_entry(void) {
 }
 
 void arch_task_init(struct task *task, uint32_t ip, uint32_t *arg) {
-    uint32_t *sp = (uint32_t *) &task->stack[sizeof(task->stack)];
+    
+    // todo: define paddr_t
+    uint32_t stack_bottom = (uint32_t)pmalloc(1);
+    uint32_t stack_top = stack_bottom + PAGE_SIZE;
+
+    uint32_t *sp = (uint32_t *)stack_top;
     
     uint32_t entry;
 
@@ -77,5 +88,9 @@ void arch_task_init(struct task *task, uint32_t ip, uint32_t *arg) {
     *--sp = 0;                      // s0
     *--sp = entry;                  // ra 
 
-    task->sp = (uint32_t)sp;
+    task->arch = (struct arch_task) {
+        .sp             = (uint32_t)sp,
+        .stack_bottom   = (uint32_t)stack_bottom,
+        .stack_top      = (uint32_t)stack_top
+    };
 }

@@ -17,7 +17,7 @@ kernel_elf = $(BUILD_DIR)/kernel.elf
 # flags
 CFLAGS :=-std=c11 -O2 -g3 -Wall -Wextra --target=riscv32 -ffreestanding -nostdlib
 CFLAGS += -I$(shell pwd)
-CFLAGS += -Ikernel/$(ARCH)
+CFLAGS += -Ikernel/$(ARCH)/include
 QEMUFLAGS := -machine virt -bios default -nographic -serial mon:stdio --no-reboot
 
 # servers

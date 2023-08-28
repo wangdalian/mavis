@@ -2,8 +2,6 @@
 #include "arch.h"
 #include "common.h"
 #include "list.h"
-#include "memory.h"
-#include "vm.h"
 
 static struct task tasks[NUM_TASK_MAX];
 struct task *current_task;
@@ -52,7 +50,7 @@ void yield(void) {
 
     struct task *prev = current_task;
     current_task = next;
-    arch_task_switch(&prev->sp, &next->sp);
+    arch_task_switch(prev, next);
 }
 
 __attribute__((noreturn))
