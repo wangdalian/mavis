@@ -62,7 +62,7 @@ void *malloc(size_t size) {
     
     uint8_t *next_ptr = current_pool->next_ptr;
 
-    if(next_ptr + size >  base + PAGE_SIZE) {
+    if(next_ptr + size >  base + PAGE_SIZE - sizeof(struct page)) {
         // extend memory
         struct page *new = pmalloc(1);
         
