@@ -3,9 +3,9 @@
 #include "common.h"
 #include "env.h"
 
-local_variable *create_local_variable(valtype ty) {
-    local_variable *val = malloc(sizeof(local_variable));
-    *val = (local_variable) {
+struct local_variable *create_local_variable(valtype ty) {
+    struct local_variable *val = malloc(sizeof(struct local_variable));
+    *val = (struct local_variable) {
         .ty         = ty,
         .val        = 0
     };
@@ -13,13 +13,13 @@ local_variable *create_local_variable(valtype ty) {
     return val;
 }
 
-wasmfunc * create_imported_func(module *m, int idx) {
+struct wasm_func * create_imported_func(module *m, int idx) {
     import *info = m->importsec->imports.x[idx];
     functype *ty = m->typesec->functypes.x[info->d->idx];
 
     int num_params = ty->rt1->n;
-    wasmfunc *wasmf = malloc(sizeof(wasmfunc) + sizeof(local_variable *) * num_params);
-    *wasmf = (wasmfunc) {
+    struct wasm_func *wasmf = malloc(sizeof(struct wasm_func) + sizeof(struct local_variable *) * num_params);
+    *wasmf = (struct wasm_func) {
         .ty         = ty,
         .imported   = true,
         .modName    = info->mod,
@@ -34,7 +34,7 @@ wasmfunc * create_imported_func(module *m, int idx) {
     return wasmf;
 }
 
-wasmfunc *create_defined_func(module *m, int idx) {
+struct wasm_func *create_defined_func(module *m, int idx) {
     int typeIdx = *m->funcsec->typeidxes.x[idx];
 
     func *f = m->codesec->codes.x[idx]->code;
@@ -48,7 +48,7 @@ wasmfunc *create_defined_func(module *m, int idx) {
         num_local += f->locals.x[i]->num;
     }
 
-    wasmfunc *wasmf = malloc(sizeof(wasmfunc) + sizeof(local_variable *) * num_local);
+    struct wasm_func *wasmf = malloc(sizeof(struct wasm_func) + sizeof(struct local_variable *) * num_local);
     wasmf->ty = ty;
     wasmf->codes = &f->expr;
 
@@ -69,27 +69,27 @@ wasmfunc *create_defined_func(module *m, int idx) {
     return wasmf;
 }
 
-void enter_block(context *ctx, instr *instr) {
+void enter_block(struct context *ctx, instr *instr) {
     //puts("[+] enter block");
     list_push_back(&ctx->blocks, &instr->link_block);
 }
 
-void exit_block(context *ctx) {
+void exit_block(struct context *ctx) {
     //puts("[+] exit block");
     list_pop_tail(&ctx->blocks);
 }
 
-void enter_frame(context *ctx, wasmfunc *f) {
+void enter_frame(struct context *ctx, struct wasm_func *f) {
     //puts("[+] enter frame");
     list_push_back(&ctx->call_stack, &f->link);
 }
 
-void exit_frame(context *ctx) {
+void exit_frame(struct context *ctx) {
     //puts("[+] exit frame");
     list_pop_tail(&ctx->call_stack);
 }
 
-instr * branch_in(context *ctx, int idx) {
+instr * branch_in(struct context *ctx, int idx) {
     if(list_tail(&ctx->blocks) == NULL) {
         return NULL;
     }
@@ -218,13 +218,13 @@ static void print_instr(instr *i) {
     }   
 }
 
-instr *invoke_f(context *ctx, wasmfunc *f);
+instr *invoke_f(struct context *ctx, struct wasm_func *f);
 
-instr *invoke_i(context *ctx, instr *ip) {
+instr *invoke_i(struct context *ctx, instr *ip) {
     instr *next_ip = LIST_CONTAINER(ip->link.next, instr , link);
     
     // get current func
-    wasmfunc *func = LIST_CONTAINER(list_tail(&ctx->call_stack), wasmfunc, link);
+    struct wasm_func *func = LIST_CONTAINER(list_tail(&ctx->call_stack), struct wasm_func, link);
    
     printf("[+] ip = ");
     print_instr(ip);
@@ -389,7 +389,7 @@ instr *invoke_i(context *ctx, instr *ip) {
     return next_ip;
 }
 
-void run_vm(context *ctx) {
+void run_vm(struct context *ctx) {
     // todo: add entry to task struct
     instr *ip = ctx->entry;
 
@@ -397,7 +397,7 @@ void run_vm(context *ctx) {
         ip = invoke_i(ctx, ip);
 }
 
-context *create_context(module *m) {
+struct context *create_context(module *m) {
     // funsec required
     if(!m->funcsec) {
         puts("[-] no funcsec");
@@ -429,8 +429,8 @@ context *create_context(module *m) {
 
     int num_funcs =  num_imports + num_defined;
     
-    // create context
-    context *ctx = malloc(sizeof(context) + sizeof(wasmfunc *) * num_funcs);
+    // create struct context
+    struct context *ctx = malloc(sizeof(struct context) + sizeof(struct wasm_func *) * num_funcs);
 
     // create stack
     uint8_t *buf = pmalloc(1);
@@ -445,10 +445,10 @@ context *create_context(module *m) {
     // init global variables if globalsec is defined
     if(m->globalsec) {
         int num_globals = m->globalsec->globals.n;
-        global_variable **globals = malloc(sizeof(global_variable *) * num_globals);
+        struct global_variable **globals = malloc(sizeof(struct global_variable *) * num_globals);
         for(int i = 0; i < num_globals; i++) {
             global *g = m->globalsec->globals.x[i];
-            global_variable *v = malloc(sizeof(global_variable));
+            struct global_variable *v = malloc(sizeof(struct global_variable));
             v->ty = g->gt;
             
             // calculate the initial value(constant expression expected)
@@ -501,14 +501,14 @@ context *create_context(module *m) {
     }
 
     // set entry & ip
-    wasmfunc *start = ctx->funcs[export->d->idx];
+    struct wasm_func *start = ctx->funcs[export->d->idx];
     enter_frame(ctx, start);
     ctx->entry = LIST_CONTAINER(list_head(start->codes), instr, link);
 
     return ctx;
 }
 
-int32_t invoke_external(context *ctx, wasmfunc *f) {
+int32_t invoke_external(struct context *ctx, struct wasm_func *f) {
     // import from another wasm binary is not supported yet
     if(strcmp(f->modName, "env") == 0) {
         if(strcmp(f->name, "env_exit") == 0) {
@@ -522,7 +522,7 @@ int32_t invoke_external(context *ctx, wasmfunc *f) {
     return 0;
 }
 
-instr *invoke_f(context *ctx, wasmfunc *f) {
+instr *invoke_f(struct context *ctx, struct wasm_func *f) {
     enter_frame(ctx, f);
     
     // set args

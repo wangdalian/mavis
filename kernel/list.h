@@ -3,13 +3,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct list {
+struct list {
     struct list *prev;
     struct list *next;
-} list;
+};
 
-typedef list list_t;
-typedef list list_elem_t;
+typedef struct list list_t;
+typedef struct list list_elem_t;
 
 #define LIST_INIT(list)                                                                     \
 ({  (list)->next = (list);                                                                  \

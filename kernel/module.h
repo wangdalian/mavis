@@ -250,6 +250,6 @@ typedef struct {
     // todo: support custom sections?
 } module;
 
-module * new_module(buffer *buf);
+module * new_module(struct buffer *buf);
 
 

@@ -2,13 +2,13 @@
 #include "buffer.h"
 #include "memory.h"
 
-valtype * parse_valtype(buffer *buf) {
+valtype * parse_valtype(struct buffer *buf) {
     valtype *valTy = malloc(sizeof(valtype));
     *valTy = readbyte(buf);
     return valTy;
 }
 
-resulttype * parse_resulttype(buffer *buf) {
+resulttype * parse_resulttype(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
 
     resulttype *retTy = malloc(sizeof(resulttype) + sizeof(valtype *) * n);
@@ -20,7 +20,7 @@ resulttype * parse_resulttype(buffer *buf) {
     return retTy;
 }
 
-functype * parse_functype(buffer *buf) {
+functype * parse_functype(struct buffer *buf) {
     functype * funcTy = malloc(sizeof(functype));
 
     // todo: assert == 0x60
@@ -34,13 +34,13 @@ functype * parse_functype(buffer *buf) {
     return funcTy;
 }
 
-typeidx * parse_typeidx(buffer *buf) {
+typeidx * parse_typeidx(struct buffer *buf) {
     typeidx *typeidx = malloc(sizeof(typeidx));
     *typeidx = readu32_LEB128(buf);
     return typeidx;
 }
 
-instr * parseInstr(buffer *buf) {
+instr * parseInstr(struct buffer *buf) {
     instr *i = malloc(sizeof(instr));
 
     i->op = readbyte(buf);
@@ -143,7 +143,7 @@ instr * parseInstr(buffer *buf) {
     return i;
 }
 
-locals * parse_locals(buffer *buf) {
+locals * parse_locals(struct buffer *buf) {
     locals * l = malloc(sizeof(locals));
 
     *l = (locals) {
@@ -153,7 +153,7 @@ locals * parse_locals(buffer *buf) {
     return l;
 }
 
-func * parse_func(buffer *buf) {
+func * parse_func(struct buffer *buf) {
     uint32_t n =  readu32_LEB128(buf);
 
     func *f = malloc(sizeof(func) + sizeof(locals *) * n);
@@ -175,19 +175,19 @@ func * parse_func(buffer *buf) {
     return f;
 }
 
-code * parse_code(buffer *buf) {
+code * parse_code(struct buffer *buf) {
     code *c = malloc(sizeof(code));
 
     c->size = readu32_LEB128(buf);
 
-    buffer * buffer = readbuffer(buf, c->size);
+    struct buffer *buffer = readbuffer(buf, c->size);
 
     c->code = parse_func(buffer);
 
     return c;   
 }
 
-exportdesc * parse_exportdesc(buffer *buf) {
+exportdesc * parse_exportdesc(struct buffer *buf) {
     exportdesc *d = malloc(sizeof(exportdesc));
     *d = (exportdesc) {
         .kind   = readbyte(buf),
@@ -196,7 +196,7 @@ exportdesc * parse_exportdesc(buffer *buf) {
     return d;
 }
 
-exp0rt * parse_export(buffer *buf) {
+exp0rt * parse_export(struct buffer *buf) {
     exp0rt *e = malloc(sizeof(exp0rt));
 
     e->name = readname(buf);
@@ -205,7 +205,7 @@ exp0rt * parse_export(buffer *buf) {
     return e;
 }
 
-importdesc * parse_importdesc(buffer *buf) {
+importdesc * parse_importdesc(struct buffer *buf) {
     importdesc *d = malloc(sizeof(importdesc));
 
     *d = (importdesc) {
@@ -216,7 +216,7 @@ importdesc * parse_importdesc(buffer *buf) {
     return d;
 }
 
-import * parse_import(buffer *buf) {
+import * parse_import(struct buffer *buf) {
     import *i = malloc(sizeof(import));
 
     *i = (import) {
@@ -228,7 +228,7 @@ import * parse_import(buffer *buf) {
     return i;
 }
 
-mem * parse_mem(buffer *buf) {
+mem * parse_mem(struct buffer *buf) {
     mem *m = malloc(sizeof(mem));
     *m = (mem) {
         .mt = (memtype) {
@@ -243,7 +243,7 @@ mem * parse_mem(buffer *buf) {
     return m;
 }
 
-data * parse_data(buffer *buf) {
+data * parse_data(struct buffer *buf) {
     data *d = malloc(sizeof(data));
     d->kind = readu32_LEB128(buf);
 
@@ -272,7 +272,7 @@ data * parse_data(buffer *buf) {
     return d;
 }
 
-section * parse_typesec(buffer *buf) {
+section * parse_typesec(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
 
     section *sec = malloc(sizeof(section) + sizeof(functype *) * n);
@@ -287,7 +287,7 @@ section * parse_typesec(buffer *buf) {
     return sec;
 }
 
-section * parse_funcsec(buffer *buf) {
+section * parse_funcsec(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
 
     section *sec = malloc(sizeof(section) + sizeof(typeidx *) * n);
@@ -302,7 +302,7 @@ section * parse_funcsec(buffer *buf) {
     return sec;
 }
 
-section * parse_codesec(buffer *buf) {
+section * parse_codesec(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
 
     section *sec = malloc(sizeof(section) + sizeof(code *) * n);
@@ -317,7 +317,7 @@ section * parse_codesec(buffer *buf) {
     return sec;
 }
 
-section * parse_exportsec(buffer *buf) {
+section * parse_exportsec(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
 
     section *sec = malloc(sizeof(section) + sizeof(exp0rt *) * n);
@@ -332,7 +332,7 @@ section * parse_exportsec(buffer *buf) {
     return sec;
 }
 
-section *parse_importsec(buffer *buf) {
+section *parse_importsec(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
 
     section *sec = malloc(sizeof(section) + sizeof(import *) * n);
@@ -347,7 +347,7 @@ section *parse_importsec(buffer *buf) {
     return sec;
 }
 
-section * parse_memsec(buffer *buf) {
+section * parse_memsec(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
     section *sec = malloc(sizeof(section) + sizeof(mem *) * n);
 
@@ -359,7 +359,7 @@ section * parse_memsec(buffer *buf) {
     return sec;
 }
 
-section * parse_datasec(buffer *buf) {
+section * parse_datasec(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
     section *sec = malloc(sizeof(section) + sizeof(data *) * n);
 
@@ -373,7 +373,7 @@ section * parse_datasec(buffer *buf) {
     return sec;
 }
 
-global *parse_global(buffer *buf) {
+global *parse_global(struct buffer *buf) {
     global *g = malloc(sizeof(global));
     g->gt = (globaltype) {
         .ty = readbyte(buf),
@@ -390,7 +390,7 @@ global *parse_global(buffer *buf) {
     return g;
 }
 
-section * parse_globalsec(buffer *buf) {
+section * parse_globalsec(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
     section *sec = malloc(sizeof(section) + sizeof(global *) * n);
     sec->id = GLOBAL_SECTION_ID;
@@ -403,7 +403,7 @@ section * parse_globalsec(buffer *buf) {
     return sec;
 }
 
-module * new_module(buffer *buf) {
+module * new_module(struct buffer *buf) {
     module *m = malloc(sizeof(module));
     *m = (module) {
         .magic = readu32(buf),
@@ -418,7 +418,7 @@ module * new_module(buffer *buf) {
     while(!eof(buf)) {
         uint8_t id  = readbyte(buf);
         uint32_t size = readu32_LEB128(buf);
-        buffer *sec = readbuffer(buf, size);
+        struct buffer *sec = readbuffer(buf, size);
 
         switch(id) {
             case TYPE_SECTION_ID:

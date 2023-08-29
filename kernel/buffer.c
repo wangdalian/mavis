@@ -1,10 +1,10 @@
 #include "buffer.h"
 #include "memory.h"
 
-buffer *newbuffer(uint8_t *p, int len) {
-    buffer *buf = malloc(sizeof(buffer));
+struct buffer *newbuffer(uint8_t *p, int len) {
+    struct buffer *buf = malloc(sizeof(struct buffer));
 
-    *buf = (buffer){
+    *buf = (struct buffer){
         .cursor = 0, 
         .len = len,
         .p = p
@@ -13,10 +13,10 @@ buffer *newbuffer(uint8_t *p, int len) {
     return buf;
 }
 
-buffer *newstack(uint8_t *p, int len) {
-    buffer *stack = malloc(sizeof(buffer));
+struct buffer *newstack(uint8_t *p, int len) {
+    struct buffer *stack = malloc(sizeof(struct buffer));
 
-    *stack = (buffer){
+    *stack = (struct buffer){
         .cursor = len, 
         .len = len,
         .p = p
@@ -25,14 +25,14 @@ buffer *newstack(uint8_t *p, int len) {
     return stack;
 }
 
-uint8_t readbyte(buffer *buf) {
+uint8_t readbyte(struct buffer *buf) {
     if(buf->cursor + 1 > buf->len)
         return 0;
 
     return buf->p[buf->cursor++];
 }
 
-uint32_t readu32(buffer *buf) {
+uint32_t readu32(struct buffer *buf) {
     if(buf->cursor + 4 > buf->len)
         return 0;
     
@@ -41,7 +41,7 @@ uint32_t readu32(buffer *buf) {
     return r;
 }
 
-int32_t readi32(buffer *buf) {
+int32_t readi32(struct buffer *buf) {
     if(buf->cursor + 4 > buf->len)
         return 0;
     
@@ -51,7 +51,7 @@ int32_t readi32(buffer *buf) {
 }
 
 // LEB128(Little Endian Base 128)
-uint32_t readu32_LEB128(buffer *buf) {
+uint32_t readu32_LEB128(struct buffer *buf) {
     uint32_t result = 0, shift = 0;
     while(1) {
         uint8_t byte = readbyte(buf); 
@@ -62,7 +62,7 @@ uint32_t readu32_LEB128(buffer *buf) {
     }
 }
 
-int32_t readi32_LEB128(buffer *buf) {
+int32_t readi32_LEB128(struct buffer *buf) {
     int32_t result = 0, shift = 0;
     while(1) {
         uint8_t byte = readbyte(buf);
@@ -77,7 +77,7 @@ int32_t readi32_LEB128(buffer *buf) {
     }
 }
 
-char * readname(buffer *buf) {
+char * readname(struct buffer *buf) {
     uint32_t n = readu32_LEB128(buf);
     char *name = malloc(sizeof(char) * (n + 1));
 
@@ -88,21 +88,21 @@ char * readname(buffer *buf) {
     return name;
 }
 
-buffer * readbuffer(buffer *buf, int len) {
+struct buffer * readbuffer(struct buffer *buf, int len) {
     if(buf->cursor + len > buf->len)
         return NULL;
 
-    buffer *new = newbuffer(buf->p + buf->cursor, len);
+    struct buffer *new = newbuffer(buf->p + buf->cursor, len);
     buf->cursor += len;
     return new;
 }
 
-bool eof(buffer *buf) {
+bool eof(struct buffer *buf) {
     return buf->cursor == buf->len;
 }
 
 // We no longer need to use LSB128 at runtime.
-uint8_t wirtebyte(buffer *buf, uint8_t val) {
+uint8_t wirtebyte(struct buffer *buf, uint8_t val) {
     if(buf->cursor - 1 < 0)
         return 0;
 
@@ -110,7 +110,7 @@ uint8_t wirtebyte(buffer *buf, uint8_t val) {
     return val;
 }
 
-uint32_t writeu32(buffer *buf, uint32_t val) {
+uint32_t writeu32(struct buffer *buf, uint32_t val) {
     if(buf->cursor - 4 < 0)
         return 0;
 
@@ -119,7 +119,7 @@ uint32_t writeu32(buffer *buf, uint32_t val) {
     return val;
 }
 
-int32_t writei32(buffer *buf, int32_t val) {
+int32_t writei32(struct buffer *buf, int32_t val) {
     if(buf->cursor - 4 < 0)
         return 0;
 
@@ -129,7 +129,7 @@ int32_t writei32(buffer *buf, int32_t val) {
     return val;
 }
 
-uint8_t storebyte(buffer *buf, int32_t offs, uint8_t val) {
+uint8_t storebyte(struct buffer *buf, int32_t offs, uint8_t val) {
     if(offs + 1 > buf->len)
         return 0;
 
@@ -137,7 +137,7 @@ uint8_t storebyte(buffer *buf, int32_t offs, uint8_t val) {
     return val;
 }
 
-int32_t storei32(buffer *buf, int32_t offs, int32_t val) {
+int32_t storei32(struct buffer *buf, int32_t offs, int32_t val) {
     if(offs + 4 > buf->len)
         return 0;
     
