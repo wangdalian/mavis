@@ -27,4 +27,4 @@ typedef list list_elem_t;
 void list_push_back(list_t *list, list_elem_t *elem);
 list_elem_t * list_head(list_t *list);
 list_elem_t * list_tail(list_t *list);
-list_elem_t *list_pop_tail(list_t *list);
+list_elem_t * list_pop_tail(list_t *list);

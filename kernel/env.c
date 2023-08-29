@@ -15,7 +15,7 @@ extern struct task *current_task;
 // todo: return number of bytes written
 void env_puts(int32_t addr) {
     // get current context
-    Context *ctx = current_task->ctx;
+    context *ctx = current_task->ctx;
 
     // todo: fix this. this implemention is dangerous.
     puts((char *)&ctx->mem->p[addr]);

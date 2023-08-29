@@ -7,13 +7,11 @@
 #include "buffer.h"
 #include "list.h"
 
+// support only i32 for now
 typedef struct {
     uint8_t ty;
-    union {
-        int32_t i32;
-        int64_t i64;
-    } val;
-} LocalValue;
+    int32_t val;
+} local_variable;
 
 typedef struct {
     globaltype ty;
@@ -22,23 +20,23 @@ typedef struct {
 
 typedef struct {
     list_elem_t link;
-    FuncType    *ty;
+    functype    *ty;
     bool        imported;
     char        *modName;
     char        *name;
     list_t      *codes;
-    LocalValue  *locals[];
-} WasmFunc;
+    local_variable  *locals[];
+} wasmfunc;
 
 typedef struct {
-    Buffer          *stack;
-    Buffer          *mem;
-    Instr           *entry;
+    buffer          *stack;
+    buffer          *mem;
+    instr           *entry;
     list_t          call_stack;
     list_t          blocks;
     global_variable **globals;
-    WasmFunc        *funcs[];
-} Context;
+    wasmfunc        *funcs[];
+} context;
 
-Context *createContext(WasmModule *m);
-void run_vm(Context *ctx);
+context *create_context(module *m);
+void run_vm(context *ctx);

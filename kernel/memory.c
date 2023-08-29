@@ -66,7 +66,7 @@ void *malloc(size_t size) {
         // extend memory
         struct page *new = pmalloc(1);
         
-        printf("[+] extend memory: new_page = %x\n", new);
+        //printf("[+] extend memory: new_page = %x\n", new);
 
         list_push_back(&current_pool->pages, &new->link);
 
@@ -80,12 +80,13 @@ void *malloc(size_t size) {
     // update next_ptr
     current_pool->next_ptr = align_up(next_ptr + size, 0x10);
 
+    /*
     printf(
         "[+] alloc mem @0x%x size = %x, next_ptr = %x\n", 
         ptr, 
         size, 
         current_pool->next_ptr
-    );
+    );*/
 
     memset(ptr, 0, size);
     return ptr;

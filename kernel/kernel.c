@@ -33,7 +33,7 @@ prompt:
 
         if (strcmp(cmdline, "hello") == 0) {
             // todo: fix this.
-            Buffer *buf = newBuffer(__hello_start, __hello_size[0]);
+            buffer *buf = newbuffer(__hello_start, __hello_size[0]);
             create_task((uint32_t)launch_vm_task, (uint32_t *)buf);
             yield();
         }

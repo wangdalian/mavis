@@ -2,6 +2,7 @@
 #include "arch.h"
 #include "common.h"
 #include "memory.h"
+#include "module.h"
 #include "vm.h"
 #include "list.h"
 
@@ -43,9 +44,9 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
 
 // todo: impl file system and fix this
 // this is entry point of vm_task
-void launch_vm_task(Buffer *buf) {
-    WasmModule *m = newWasmModule(buf);
-    current_task->ctx = createContext(m);
+void launch_vm_task(buffer *buf) {
+    module *m = new_module(buf);
+    current_task->ctx = create_context(m);
     run_vm(current_task->ctx);
 }
 
@@ -72,7 +73,7 @@ __attribute__((noreturn))
 void task_exit(int32_t code) {
     // If vm_task, free the memory that was being used.
     if(current_task->ctx) {
-        Context *ctx = current_task->ctx;
+        context *ctx = current_task->ctx;
         pfree(ctx->stack->p);
         pfree(ctx->mem->p);
     }

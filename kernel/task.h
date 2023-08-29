@@ -23,10 +23,10 @@ struct task {
     Used if vm_task. It is initialized by the launch_vm_task function.
     If launch fails, the "vm_task" needs to exit, so it must be initialized after the task has been executed.
     */
-    Context             *ctx;
+    context             *ctx;
 };
 
 struct task *create_task(uint32_t ip, uint32_t *arg);
-void launch_vm_task(Buffer *buf);
+void launch_vm_task(buffer *buf);
 void yield(void);
 void task_exit(int32_t code);

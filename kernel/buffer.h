@@ -7,24 +7,24 @@ typedef struct {
     int cursor;
     int len;
     uint8_t *p;
-}Buffer;
+}buffer;
 
-Buffer *newBuffer(uint8_t *p, int len);
-Buffer *newStack(uint8_t *p, int len);
+buffer *newbuffer(uint8_t *p, int len);
+buffer *newstack(uint8_t *p, int len);
 
-uint8_t readByte(Buffer *buf);
-uint32_t readU32(Buffer *buf);
-int32_t readI32(Buffer *buf);
-uint32_t readU32_LEB128(Buffer *buf);
-int32_t readI32_LEB128(Buffer *buf);
-Buffer * readBuffer(Buffer *buf, int len);
-char * readName(Buffer *buf);
+uint8_t readbyte(buffer *buf);
+uint32_t readu32(buffer *buf);
+int32_t readi32(buffer *buf);
+uint32_t readu32_LEB128(buffer *buf);
+int32_t readu32_LEB28(buffer *buf);
+buffer * readbuffer(buffer *buf, int len);
+char * readname(buffer *buf);
 
-uint8_t writeByte(Buffer *buf, uint8_t val);
-uint32_t writeU32(Buffer *buf, uint32_t val);
-int32_t writeI32(Buffer *buf, int32_t val);
+uint8_t writebyte(buffer *buf, uint8_t val);
+uint32_t writeu32(buffer *buf, uint32_t val);
+int32_t writei32(buffer *buf, int32_t val);
 
-uint8_t storeByte(Buffer *buf, int32_t offs, uint8_t val);
-int32_t storeI32(Buffer *buf, int32_t offs, int32_t val);
+uint8_t storebyte(buffer *buf, int32_t offs, uint8_t val);
+int32_t storei32(buffer *buf, int32_t offs, int32_t val);
 
-bool eof(Buffer *buf);
+bool eof(buffer *buf);

@@ -2,84 +2,84 @@
 #include "buffer.h"
 #include "memory.h"
 
-ValType * parseValType(Buffer *buf) {
-    ValType *valTy = malloc(sizeof(ValType));
-    *valTy = readByte(buf);
+valtype * parse_valtype(buffer *buf) {
+    valtype *valTy = malloc(sizeof(valtype));
+    *valTy = readbyte(buf);
     return valTy;
 }
 
-ResultType * parseResultType(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
+resulttype * parse_resulttype(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
 
-    ResultType *retTy = malloc(sizeof(ResultType) + sizeof(ValType *) * n);
+    resulttype *retTy = malloc(sizeof(resulttype) + sizeof(valtype *) * n);
 
     retTy->n = n;
 
     for(int i = 0; i < retTy->n; i++)
-        retTy->x[i] = parseValType(buf);
+        retTy->x[i] = parse_valtype(buf);
     return retTy;
 }
 
-FuncType * parseFuncType(Buffer *buf) {
-    FuncType * funcTy = malloc(sizeof(FuncType));
+functype * parse_functype(buffer *buf) {
+    functype * funcTy = malloc(sizeof(functype));
 
     // todo: assert == 0x60
-    readByte(buf);
+    readbyte(buf);
     
     // rt1
-    funcTy->rt1 = parseResultType(buf);
+    funcTy->rt1 = parse_resulttype(buf);
     // rt2
-    funcTy->rt2 = parseResultType(buf);
+    funcTy->rt2 = parse_resulttype(buf);
 
     return funcTy;
 }
 
-TypeIdx * parseTypeIdx(Buffer *buf) {
-    TypeIdx *typeIdx = malloc(sizeof(TypeIdx));
-    *typeIdx = readU32_LEB128(buf);
-    return typeIdx;
+typeidx * parse_typeidx(buffer *buf) {
+    typeidx *typeidx = malloc(sizeof(typeidx));
+    *typeidx = readu32_LEB128(buf);
+    return typeidx;
 }
 
-Instr * parseInstr(Buffer *buf) {
-    Instr *instr = malloc(sizeof(Instr));
+instr * parseInstr(buffer *buf) {
+    instr *i = malloc(sizeof(instr));
 
-    instr->op = readByte(buf);
+    i->op = readbyte(buf);
 
-    switch(instr->op) {
+    switch(i->op) {
         case I32Const:
-            instr->i32Const = (I32ConstInstr) {
-                .n = readU32_LEB128(buf)
+            i->i32_const = (i32_const_instr) {
+                .n = readu32_LEB128(buf)
             };
             break;
         
         case I32Store:
-            instr->i32Store = (I32StoreInstr) {
-                .offset = readU32_LEB128(buf),
-                .align  = readU32_LEB128(buf)
+            i->i32_store = (i32_store_instr) {
+                .offset = readu32_LEB128(buf),
+                .align  = readu32_LEB128(buf)
             };
             break;
         
         case LocalGet:
-            instr->localGet = (LocalGetInstr) {
-                .localIdx = readU32_LEB128(buf)
+            i->local_get = (local_get_instr) {
+                .idx = readu32_LEB128(buf)
             };
             break;
         
         case LocalSet:
-            instr->localSet = (LocalSetInstr) {
-                .localIdx = readU32_LEB128(buf)
+            i->local_set = (local_set_instr) {
+                .idx = readu32_LEB128(buf)
             };
             break;
         
         case GlobalGet:
-            instr->global_get = (global_get_instr) {
-                .idx        = readU32_LEB128(buf)
+            i->global_get = (global_get_instr) {
+                .idx        = readu32_LEB128(buf)
             };
             break;
 
         case GlobalSet:
-            instr->global_set = (global_set_instr) {
-                .idx    = readU32_LEB128(buf)
+            i->global_set = (global_set_instr) {
+                .idx    = readu32_LEB128(buf)
             };
             break;
         
@@ -92,43 +92,43 @@ Instr * parseInstr(Buffer *buf) {
             break;
         
         case If: {
-            instr->If.blockType = readByte(buf);
-            LIST_INIT(&instr->If.thenInstrs);
-            Instr *i;
+            i->If.bt = readbyte(buf);
+            LIST_INIT(&i->If.in1);
+            instr *j;
             do {
-                i = parseInstr(buf);
-                list_push_back(&instr->If.thenInstrs, &i->link);
-            } while(i->op != End && i->op != Else);
+                j = parseInstr(buf);
+                list_push_back(&i->If.in1, &j->link);
+            } while(j->op != End && j->op != Else);
 
             if(i->op == Else) {
-                LIST_INIT(&instr->If.elseInstrs);
+                LIST_INIT(&i->If.in2);
                 do {
-                    i =  parseInstr(buf);
-                    list_push_back(&instr->If.elseInstrs, &i->link);
-                } while(i->op != End);
+                    j =  parseInstr(buf);
+                    list_push_back(&i->If.in2, &j->link);
+                } while(j->op != End);
             }
             break;
         }
 
         case Block:
         case Loop: {
-            instr->block.blockType = readByte(buf);
-            LIST_INIT(&instr->block.instrs);
-            Instr *i;
+            i->block.bt = readbyte(buf);
+            LIST_INIT(&i->block.in);
+            instr *j;
             do {
-                i = parseInstr(buf);
-                list_push_back(&instr->block.instrs, &i->link);
-            } while(i->op != End);
+                j = parseInstr(buf);
+                list_push_back(&i->block.in, &j->link);
+            } while(j->op != End);
             break;
         }
         
         case Br:
         case BrIf:
-            instr->br.labelIdx = readU32_LEB128(buf);
+            i->br.l = readu32_LEB128(buf);
             break;
         
         case Call:
-            instr->call.funcIdx = readU32_LEB128(buf);
+            i->call.idx = readu32_LEB128(buf);
             break;
         
         case Return:
@@ -140,126 +140,126 @@ Instr * parseInstr(Buffer *buf) {
         
     }
 
-    return instr;
+    return i;
 }
 
-Locals * parseLocals(Buffer *buf) {
-    Locals * locals = malloc(sizeof(Locals));
+locals * parse_locals(buffer *buf) {
+    locals * l = malloc(sizeof(locals));
 
-    *locals = (Locals) {
-        .num    = readU32_LEB128(buf),
-        .ty     = readByte(buf)
+    *l = (locals) {
+        .num    = readu32_LEB128(buf),
+        .ty     = readbyte(buf)
     };
-    return locals;
+    return l;
 }
 
-Func * parseFunc(Buffer *buf) {
-    uint32_t n =  readU32_LEB128(buf);
+func * parse_func(buffer *buf) {
+    uint32_t n =  readu32_LEB128(buf);
 
-    Func *func = malloc(sizeof(Func) + sizeof(Locals *) * n);
+    func *f = malloc(sizeof(func) + sizeof(locals *) * n);
 
-    func->locals.n = n;
+    f->locals.n = n;
 
-    for(int i = 0; i < func->locals.n; i++)
-        func->locals.x[i] = parseLocals(buf);
+    for(int i = 0; i < f->locals.n; i++)
+        f->locals.x[i] = parse_locals(buf);
 
-    LIST_INIT(&func->expr);
+    LIST_INIT(&f->expr);
 
     while(!eof(buf)) {
         list_push_back(
-                &func->expr, 
+                &f->expr, 
                 &parseInstr(buf)->link
             );
     }
 
-    return func;
+    return f;
 }
 
-Code * parseCode(Buffer *buf) {
-    Code *code = malloc(sizeof(Code));
+code * parse_code(buffer *buf) {
+    code *c = malloc(sizeof(code));
 
-    code->size = readU32_LEB128(buf);
+    c->size = readu32_LEB128(buf);
 
-    Buffer * buffer = readBuffer(buf, code->size);
+    buffer * buffer = readbuffer(buf, c->size);
 
-    code->func = parseFunc(buffer);
+    c->code = parse_func(buffer);
 
-    return code;   
+    return c;   
 }
 
-ExportDesc * parseExportDesc(Buffer *buf) {
-    ExportDesc *d = malloc(sizeof(ExportDesc));
-    *d = (ExportDesc) {
-        .kind   = readByte(buf),
-        .idx    = readU32_LEB128(buf)
+exportdesc * parse_exportdesc(buffer *buf) {
+    exportdesc *d = malloc(sizeof(exportdesc));
+    *d = (exportdesc) {
+        .kind   = readbyte(buf),
+        .idx    = readu32_LEB128(buf)
     };
     return d;
 }
 
-Export * parseExport(Buffer *buf) {
-    Export *export = malloc(sizeof(Export));
+exp0rt * parse_export(buffer *buf) {
+    exp0rt *e = malloc(sizeof(exp0rt));
 
-    export->name = readName(buf);
-    export->exportDesc = parseExportDesc(buf);
+    e->name = readname(buf);
+    e->d = parse_exportdesc(buf);
 
-    return export;
+    return e;
 }
 
-ImportDesc * parseImportDesc(Buffer *buf) {
-    ImportDesc *d = malloc(sizeof(ImportDesc));
+importdesc * parse_importdesc(buffer *buf) {
+    importdesc *d = malloc(sizeof(importdesc));
 
-    *d = (ImportDesc) {
-        .kind       = readByte(buf),
-        .typeIdx    = readU32_LEB128(buf)
+    *d = (importdesc) {
+        .kind       = readbyte(buf),
+        .idx        = readu32_LEB128(buf)
     };
 
     return d;
 }
 
-Import * parseImport(Buffer *buf) {
-    Import *import = malloc(sizeof(Import));
+import * parse_import(buffer *buf) {
+    import *i = malloc(sizeof(import));
 
-    *import = (Import) {
-        .modName    = readName(buf),
-        .name       = readName(buf),
-        .importDesc = parseImportDesc(buf)
+    *i = (import) {
+        .mod    = readname(buf),
+        .nm     = readname(buf),
+        .d      = parse_importdesc(buf)
     };
 
-    return import;
+    return i;
 }
 
-Mem * parseMem(Buffer *buf) {
-    Mem *mem = malloc(sizeof(Mem));
-    *mem = (Mem) {
-        .mt = (MemType) {
-            .kind   = readByte(buf),
-            .min    = readU32_LEB128(buf)
+mem * parse_mem(buffer *buf) {
+    mem *m = malloc(sizeof(mem));
+    *m = (mem) {
+        .mt = (memtype) {
+            .kind   = readbyte(buf),
+            .min    = readu32_LEB128(buf)
         }
     };
     
-    if(mem->mt.kind)
-        mem->mt.max = readU32_LEB128(buf);
+    if(m->mt.kind)
+        m->mt.max = readu32_LEB128(buf);
 
-    return mem;
+    return m;
 }
 
-Data * parseData(Buffer *buf) {
-    Data *data = malloc(sizeof(Data));
-    data->kind = readU32_LEB128(buf);
+data * parse_data(buffer *buf) {
+    data *d = malloc(sizeof(data));
+    d->kind = readu32_LEB128(buf);
 
-    switch(data->kind) {
+    switch(d->kind) {
         case 0: {
-            LIST_INIT(&data->expr);
-            Instr *i;
+            LIST_INIT(&d->expr);
+            instr *i;
             do {
                 i = parseInstr(buf);
-                list_push_back(&data->expr, &i->link);
+                list_push_back(&d->expr, &i->link);
             } while(i->op != End);
             
-            data->n = readU32_LEB128(buf);
-            data->data = malloc(sizeof(uint8_t) * data->n);
-            for(uint32_t i = 0; i < data->n; i++) {
-                data->data[i] = readByte(buf);
+            d->n = readu32_LEB128(buf);
+            d->data = malloc(sizeof(uint8_t) * d->n);
+            for(uint32_t i = 0; i < d->n; i++) {
+                d->data[i] = readbyte(buf);
             }
             break;
         }
@@ -269,119 +269,119 @@ Data * parseData(Buffer *buf) {
             break;
     }
 
-    return data;
+    return d;
 }
 
-Section * parseTypeSection(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
+section * parse_typesec(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
 
-    Section *sec = malloc(sizeof(Section) + sizeof(FuncType *) * n);
+    section *sec = malloc(sizeof(section) + sizeof(functype *) * n);
     
     sec->id = TYPE_SECTION_ID;
-    sec->funcTypes.n = n;
+    sec->functypes.n = n;
 
-    for(int i = 0; i < sec->funcTypes.n; i++) {
-        sec->funcTypes.x[i] = parseFuncType(buf);
+    for(int i = 0; i < sec->functypes.n; i++) {
+        sec->functypes.x[i] = parse_functype(buf);
     }
 
     return sec;
 }
 
-Section * parseFuncSection(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
+section * parse_funcsec(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
 
-    Section *sec = malloc(sizeof(Section) + sizeof(TypeIdx *) * n);
+    section *sec = malloc(sizeof(section) + sizeof(typeidx *) * n);
 
     sec->id = FUNC_SECTION_ID;
-    sec->typeIdxes.n = n;
+    sec->typeidxes.n = n;
 
-    for(int i = 0; i < sec->typeIdxes.n; i++) {
-        sec->typeIdxes.x[i] = parseTypeIdx(buf);
+    for(int i = 0; i < sec->typeidxes.n; i++) {
+        sec->typeidxes.x[i] = parse_typeidx(buf);
     }
 
     return sec;
 }
 
-Section * parseCodeSection(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
+section * parse_codesec(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
 
-    Section *sec = malloc(sizeof(Section) + sizeof(Code *) * n);
+    section *sec = malloc(sizeof(section) + sizeof(code *) * n);
 
     sec->id = CODE_SECTION_ID;
     sec->codes.n = n;
 
-    for(int i = 0; i < sec->typeIdxes.n; i++) {
-        sec->codes.x[i] = parseCode(buf);
+    for(int i = 0; i < sec->typeidxes.n; i++) {
+        sec->codes.x[i] = parse_code(buf);
     }
 
     return sec;
 }
 
-Section * parseExportSection(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
+section * parse_exportsec(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
 
-    Section *sec = malloc(sizeof(Section) + sizeof(Export *) * n);
+    section *sec = malloc(sizeof(section) + sizeof(exp0rt *) * n);
 
     sec->id = EXPORT_SECTION_ID;
     sec->exports.n = n;
 
     for(int i = 0; i < sec->exports.n; i++) {
-        sec->exports.x[i] = parseExport(buf);
+        sec->exports.x[i] = parse_export(buf);
     }
 
     return sec;
 }
 
-Section *parseImportSection(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
+section *parse_importsec(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
 
-    Section *sec = malloc(sizeof(Section) + sizeof(Import *) * n);
+    section *sec = malloc(sizeof(section) + sizeof(import *) * n);
 
     sec->id = IMPORT_SECTION_ID;
     sec->imports.n = n;
 
     for(int i = 0; i < sec->imports.n; i++) {
-        sec->imports.x[i] = parseImport(buf);
+        sec->imports.x[i] = parse_import(buf);
     }
 
     return sec;
 }
 
-Section * parseMemSection(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
-    Section *sec = malloc(sizeof(Section) + sizeof(Mem *) * n);
+section * parse_memsec(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
+    section *sec = malloc(sizeof(section) + sizeof(mem *) * n);
 
     sec->id = MEM_SECTION_ID;
     sec->mems.n = n;
     for(int i = 0; i < sec->mems.n; i++) {
-        sec->mems.x[i] = parseMem(buf);
+        sec->mems.x[i] = parse_mem(buf);
     }
     return sec;
 }
 
-Section * parseDataSection(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
-    Section *sec = malloc(sizeof(Section) + sizeof(Data *) * n);
+section * parse_datasec(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
+    section *sec = malloc(sizeof(section) + sizeof(data *) * n);
 
     sec->id = DATA_SECTION_ID;
     sec->datas.n = n;
 
     for(int i = 0; i < sec->datas.n; i++) {
-        sec->datas.x[i] = parseData(buf);
+        sec->datas.x[i] = parse_data(buf);
     }
 
     return sec;
 }
 
-global *parse_global(Buffer *buf) {
+global *parse_global(buffer *buf) {
     global *g = malloc(sizeof(global));
-    g->ty = (globaltype) {
-        .ty = readByte(buf),
-        .m  = readByte(buf)
+    g->gt = (globaltype) {
+        .ty = readbyte(buf),
+        .m  = readbyte(buf)
     };
 
     LIST_INIT(&g->expr);
-    Instr *i;
+    instr *i;
     do {
         i = parseInstr(buf);
         list_push_back(&g->expr, &i->link);
@@ -390,9 +390,9 @@ global *parse_global(Buffer *buf) {
     return g;
 }
 
-Section * parse_globalsec(Buffer *buf) {
-    uint32_t n = readU32_LEB128(buf);
-    Section *sec = malloc(sizeof(Section) + sizeof(global *) * n);
+section * parse_globalsec(buffer *buf) {
+    uint32_t n = readu32_LEB128(buf);
+    section *sec = malloc(sizeof(section) + sizeof(global *) * n);
     sec->id = GLOBAL_SECTION_ID;
     sec->globals.n = n;
 
@@ -403,59 +403,59 @@ Section * parse_globalsec(Buffer *buf) {
     return sec;
 }
 
-WasmModule * newWasmModule(Buffer *buf) {
-    WasmModule *module = malloc(sizeof(WasmModule));
-    *module = (WasmModule) {
-        .magic = readU32(buf),
-        .version = readU32(buf)
+module * new_module(buffer *buf) {
+    module *m = malloc(sizeof(module));
+    *m = (module) {
+        .magic = readu32(buf),
+        .version = readu32(buf)
     };
 
-    Section **sec = &module->typesec;
+    section **sec = &m->typesec;
     for(int i = 0; i < 8; i++)
         sec[i] = NULL;
     
     // parse known sections
     while(!eof(buf)) {
-        uint8_t id  = readByte(buf);
-        uint32_t size = readU32_LEB128(buf);
-        Buffer *sec = readBuffer(buf, size);
+        uint8_t id  = readbyte(buf);
+        uint32_t size = readu32_LEB128(buf);
+        buffer *sec = readbuffer(buf, size);
 
         switch(id) {
             case TYPE_SECTION_ID:
-                module->typesec = parseTypeSection(sec);
+                m->typesec = parse_typesec(sec);
                 break;
             
             case IMPORT_SECTION_ID:
-                module->importsec = parseImportSection(sec);
+                m->importsec = parse_importsec(sec);
                 break;
 
             case FUNC_SECTION_ID:
-                module->funcsec = parseFuncSection(sec);
+                m->funcsec = parse_funcsec(sec);
                 break;
 
             case MEM_SECTION_ID:
-                module->memsec = parseMemSection(sec);
+                m->memsec = parse_memsec(sec);
                 break;
             
             case GLOBAL_SECTION_ID:
-                module->globalsec = parse_globalsec(sec);
+                m->globalsec = parse_globalsec(sec);
                 break;
             
             case EXPORT_SECTION_ID:
-                module->exportsec = parseExportSection(sec);
+                m->exportsec = parse_exportsec(sec);
                 break;
 
             case CODE_SECTION_ID:
-                module->codesec = parseCodeSection(sec);
+                m->codesec = parse_codesec(sec);
                 break;
 
             case DATA_SECTION_ID:
-                module->datasec = parseDataSection(sec);
+                m->datasec = parse_datasec(sec);
                 break;
 
             // ignore other sections
         }
     }
 
-    return module;
+    return m;
 }

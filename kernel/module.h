@@ -19,25 +19,25 @@ typedef struct {                    \
 #define FuncRef     0x70
 #define ExternRef   0x6f
 
-typedef uint8_t ValType;
-DEFINE_VECTOR(ValType);
+typedef uint8_t valtype;
+DEFINE_VECTOR(valtype);
 
-typedef ValType_v ResultType;
+typedef valtype_v resulttype;
 
 typedef struct {
-    ResultType  *rt1;
-    ResultType  *rt2;
-} FuncType;
-DEFINE_VECTOR(FuncType);
+    resulttype  *rt1;
+    resulttype  *rt2;
+} functype;
+DEFINE_VECTOR(functype);
 
-typedef uint32_t TypeIdx;
-DEFINE_VECTOR(TypeIdx);
+typedef uint32_t typeidx;
+DEFINE_VECTOR(typeidx);
 
 typedef struct {
     uint32_t num;
     uint8_t ty;
-} Locals;
-DEFINE_VECTOR(Locals);
+} locals;
+DEFINE_VECTOR(locals);
 
 typedef enum {
     Unreachable = 0x00,
@@ -64,19 +64,19 @@ typedef enum {
     Call        = 0x10,
     Drop        = 0x1a,
     End         = 0xb
-} Op;
+} op;
 
 typedef struct {
     uint32_t    n;
-}I32ConstInstr;
+} i32_const_instr;
 
 typedef struct {
-    uint32_t    localIdx;
-} LocalGetInstr;
+    uint32_t    idx;
+} local_get_instr;
 
 typedef struct {
-    uint32_t    localIdx;
-} LocalSetInstr;
+    uint32_t    idx;
+} local_set_instr;
 
 typedef uint32_t globalidx;
 typedef struct {
@@ -87,118 +87,124 @@ typedef struct {
     globalidx idx;
 } global_set_instr;
 
+// do not support s33 for now
+typedef valtype blocktype;
 typedef struct {
-    uint8_t     blockType;
-    list_t      thenInstrs;
-    list_t      elseInstrs;
-} IfInstr;
+    blocktype   bt;
+    list_t      in1;
+    list_t      in2;
+} if_instr;
 
 typedef struct {
-    uint8_t     blockType;
-    list_t      instrs;
-} BlockInstr;
+    blocktype   bt;
+    list_t      in;
+} block_instr;
 
+typedef uint32_t labelidx;
 typedef struct {
-    uint32_t    labelIdx;
-} BrInstr;
+    labelidx    l;
+} br_instr;
 
+typedef uint32_t funcidx;
 typedef struct {
-    uint32_t    funcIdx;
-} CallInstr;
+    funcidx    idx;
+} call_instr;
+
 
 typedef struct {
     uint32_t    offset;
     uint32_t    align;
-} I32StoreInstr;
+} i32_store_instr;
 
 typedef struct {
     list_elem_t link;
     list_elem_t link_block; //used to link block instructions
     uint8_t     op;
     union {
-        I32ConstInstr   i32Const;
-        I32StoreInstr   i32Store;
-        LocalGetInstr   localGet;
-        LocalSetInstr   localSet;
-        global_get_instr global_get;
-        global_set_instr global_set;
-        IfInstr         If;
-        BlockInstr      block;
-        BrInstr         br;
-        CallInstr       call;
+        i32_const_instr     i32_const;
+        i32_store_instr     i32_store;
+        local_get_instr     local_get;
+        local_set_instr     local_set;
+        global_get_instr    global_get;
+        global_set_instr    global_set;
+        if_instr            If;
+        block_instr         block;
+        br_instr            br;
+        call_instr          call;
     };
-} Instr;
+} instr;
 
 typedef struct {
     list_t      expr;
-    Locals_v    locals;
-} Func;
+    locals_v    locals;
+} func;
 
 typedef struct {
     uint32_t    size;
-    Func        *func;
-} Code;
-DEFINE_VECTOR(Code);
+    func        *code;
+} code;
+DEFINE_VECTOR(code);
 
 typedef struct {
     uint8_t     kind;
     uint32_t    idx;   
-} ExportDesc;
+} exportdesc;
 
 typedef struct {
-    char *name;
-    ExportDesc * exportDesc; 
-} Export;
-DEFINE_VECTOR(Export);
+    char        *name;
+    exportdesc  *d; 
+} exp0rt;
+
+DEFINE_VECTOR(exp0rt);
 
 typedef struct {
     uint8_t     kind;
     union {
         // todo: add types
-        TypeIdx typeIdx;
+        typeidx idx;
     };
-} ImportDesc;
+} importdesc;
 
 typedef struct {
-    char        *modName;
-    char        *name;
-    ImportDesc  *importDesc;
-} Import;
-DEFINE_VECTOR(Import);
+    char        *mod;
+    char        *nm;
+    importdesc  *d;
+} import;
+DEFINE_VECTOR(import);
 
 typedef struct {
     uint8_t     kind;
     uint32_t    min;
     uint32_t    max;
-} Limits;
+} limits;
 
-typedef Limits MemType;
+typedef limits memtype;
 typedef struct {
-    MemType     mt;
-} Mem;
-DEFINE_VECTOR(Mem);
+    memtype     mt;
+} mem;
+DEFINE_VECTOR(mem);
 
-typedef uint8_t Byte;
-typedef uint32_t MemIdx;
+typedef uint8_t byte;
+typedef uint32_t memidx;
 
 typedef struct {
     uint32_t    kind;
-    MemIdx      x;
+    memidx      x;
     list_t      expr;
     // todo: fix this. add readByteVec to "buffer.c"?
     uint32_t    n;
-    Byte        *data;
-} Data;
-DEFINE_VECTOR(Data);
+    byte        *data;
+} data;
+DEFINE_VECTOR(data);
 
 typedef uint8_t mut;
 typedef struct {
-    ValType     ty;
+    valtype     ty;
     mut         m;
 } globaltype;
 
 typedef struct {
-    globaltype  ty;
+    globaltype  gt;
     list_t      expr;
 } global;
 DEFINE_VECTOR(global);
@@ -216,34 +222,34 @@ typedef struct {
     list_elem_t link;
     int id;
     union {
-        FuncType_v  funcTypes;      // typesec
-        Import_v    imports;        // importsec
-        TypeIdx_v   typeIdxes;      // funcsec
-        Mem_v       mems;           // memsec
+        functype_v  functypes;      // typesec
+        import_v    imports;        // importsec
+        typeidx_v   typeidxes;      // funcsec
+        mem_v       mems;           // memsec
         global_v    globals;        // globalsec
-        Export_v    exports;        // exportsec
-        Code_v      codes;          // codesec
-        Data_v      datas;          // datasec
+        exp0rt_v    exports;        // exportsec
+        code_v      codes;          // codesec
+        data_v      datas;          // datasec
     };
-} Section;
+} section;
 
 typedef struct {
     uint32_t    magic;
     uint32_t    version;
 
     // known sections
-    Section     *typesec;
-    Section     *importsec;
-    Section     *funcsec;
-    Section     *memsec;
-    Section     *globalsec;
-    Section     *exportsec;
-    Section     *codesec;
-    Section     *datasec;
+    section     *typesec;
+    section     *importsec;
+    section     *funcsec;
+    section     *memsec;
+    section     *globalsec;
+    section     *exportsec;
+    section     *codesec;
+    section     *datasec;
 
     // todo: support custom sections?
-} WasmModule;
+} module;
 
-WasmModule * newWasmModule(Buffer *buf);
+module * new_module(buffer *buf);
 
 
