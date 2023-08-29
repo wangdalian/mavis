@@ -1,5 +1,6 @@
 # commands
 CC := clang
+WASI_SDK_CLANG := $(HOME)/wasi-sdk-20.0/bin/clang
 LD := ld.lld
 MKDIR := mkdir
 CP := cp
@@ -16,12 +17,13 @@ kernel_elf = $(BUILD_DIR)/kernel.elf
 
 # flags
 CFLAGS :=-std=c11 -O2 -g3 -Wall -Wextra --target=riscv32 -ffreestanding -nostdlib
-CFLAGS += -I$(shell pwd)
+TOP_DIR := $(shell pwd)
+CFLAGS += -I$(TOP_DIR)
 CFLAGS += -Ikernel/$(ARCH)/include
 QEMUFLAGS := -machine virt -bios default -nographic -serial mon:stdio --no-reboot
 
 # servers
-all_servers := $(notdir $(patsubst %/main.S, %, $(wildcard servers/*/main.S)))
+all_servers := $(notdir $(patsubst %/main.c, %, $(wildcard servers/*/main.c)))
 
 .PHONY: build
 build: servers $(kernel_elf)
@@ -56,11 +58,11 @@ $(BUILD_DIR)/kernel/kernel.ld: kernel/kernel.ld
 # rulues for building servers
 define build_server
 	$(eval build_dir := $(BUILD_DIR)/servers/$(1))
-	$(eval wat := servers/$(1)/main.wat)
+	$(eval src := servers/$(1)/main.c)
 	$(eval asm := servers/$(1)/main.S)
 	$(eval target := $(build_dir)/main.o)
 	$(MKDIR) -p $(build_dir)
-	$(WAT2WASM) $(wat) -o $(build_dir)/main.wasm
+	$(WASI_SDK_CLANG) $(src) -nostdlib -I$(TOP_DIR) -o $(build_dir)/main.wasm
 	$(CC) -D__wasm_path__='"$(build_dir)/main.wasm"' --target=riscv32 -c -o $(target) $(asm)
 
 endef
