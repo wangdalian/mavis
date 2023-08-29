@@ -80,7 +80,7 @@ void exitBlock(Context *ctx) {
 }
 
 void enterFrame(Context *ctx, WasmFunc *f) {
-    //puts("[+] enter frame");
+    puts("[+] enter frame");
     list_push_back(&ctx->call_stack, &f->link);
 }
 
@@ -161,8 +161,17 @@ static void printInstr(Instr *instr) {
         case LocalSet:
             printf("local.set %x\n", instr->localSet.localIdx);
             break;
+        case GlobalGet:
+            printf("global.get %x\n", instr->global_get.idx);
+            break;
+        case GlobalSet:
+            printf("global.set %x\n", instr->global_set.idx);
+            break;
         case I32Add:
             puts("i32.add");
+            break;
+        case I32Sub:
+            puts("i32.sub");
             break;
         case I32Eqz:
             puts("i32.eqz");
@@ -191,6 +200,12 @@ static void printInstr(Instr *instr) {
                 instr->br.labelIdx
             );
             break;
+        case Return:
+            puts("return");
+            break;
+        case Unreachable:
+            puts("unreachable");
+            break;
         case Call:
             printf("call %x\n", instr->call.funcIdx);
             break;
@@ -211,8 +226,8 @@ Instr *invokeI(Context *ctx, Instr *ip) {
     // get current func
     WasmFunc *func = LIST_CONTAINER(list_tail(&ctx->call_stack), WasmFunc, link);
    
-    //printf("[+] ip = ");
-    //printInstr(ip);
+    printf("[+] ip = ");
+    printInstr(ip);
 
     switch(ip->op) {
         case I32Const:
@@ -223,6 +238,13 @@ Instr *invokeI(Context *ctx, Instr *ip) {
             int32_t rhs = readI32(ctx->stack);
             int32_t lhs = readI32(ctx->stack);
             writeI32(ctx->stack, lhs + rhs);
+            break;
+        }
+
+        case I32Sub: {
+            int32_t rhs = readI32(ctx->stack);
+            int32_t lhs = readI32(ctx->stack);
+            writeI32(ctx->stack, lhs - rhs);
             break;
         }
 
@@ -265,6 +287,20 @@ Instr *invokeI(Context *ctx, Instr *ip) {
         case LocalSet: {
             int32_t val = readI32(ctx->stack);
             func->locals[ip->localSet.localIdx]->val.i32 = val;
+            break;
+        }
+
+        case GlobalGet: {
+            writeI32(
+                ctx->stack, 
+                ctx->globals[ip->global_get.idx]->val
+            );
+            break;
+        }
+
+        case GlobalSet: {
+            int32_t val = readI32(ctx->stack);
+            ctx->globals[ip->global_set.idx]->val = val;
             break;
         }
 
@@ -333,15 +369,21 @@ Instr *invokeI(Context *ctx, Instr *ip) {
             readI32(ctx->stack);
             break;
         
+        case Return:
         case End: 
-        case Else:{
+        case Else:
             next_ip =  branchIn(ctx, 0);
+            break;
+
+        case Unreachable:
+            // exit current task
+            puts("[!] unreachable!");
+            env_exit(0);
             break;
         
         default:
             next_ip = NULL;
             break;
-        }
     }
 
     return next_ip;
@@ -416,6 +458,7 @@ Context *createContext(WasmModule *m) {
                 
             v->val = readI32(ctx->stack);
             globals[i] = v;
+            printf("[+] globals %d = %x\n", i, v->val);
         }
         ctx->globals = globals;
     }
@@ -459,6 +502,7 @@ Context *createContext(WasmModule *m) {
 
     // set entry & ip
     WasmFunc *start = ctx->funcs[export->exportDesc->idx];
+    enterFrame(ctx, start);
     ctx->entry = LIST_CONTAINER(list_head(start->codes), Instr, link);
 
     return ctx;
@@ -467,10 +511,10 @@ Context *createContext(WasmModule *m) {
 int32_t invokeExternal(Context *ctx, WasmFunc *f) {
     // import from another wasm binary is not supported yet
     if(strcmp(f->modName, "env") == 0) {
-        if(strcmp(f->name, "exit") == 0) {
+        if(strcmp(f->name, "env_exit") == 0) {
             env_exit(f->locals[0]->val.i32);
         }
-        if(strcmp(f->name, "puts") == 0) {
+        if(strcmp(f->name, "env_puts") == 0) {
             env_puts(f->locals[0]->val.i32);
         }
     }

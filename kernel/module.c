@@ -71,7 +71,20 @@ Instr * parseInstr(Buffer *buf) {
             };
             break;
         
+        case GlobalGet:
+            instr->global_get = (global_get_instr) {
+                .idx        = readU32_LEB128(buf)
+            };
+            break;
+
+        case GlobalSet:
+            instr->global_set = (global_set_instr) {
+                .idx    = readU32_LEB128(buf)
+            };
+            break;
+        
         case I32Add:
+        case I32Sub:
         case I32Eqz:
         case I32Lt_s:
         case I32Ge_s:
@@ -118,6 +131,8 @@ Instr * parseInstr(Buffer *buf) {
             instr->call.funcIdx = readU32_LEB128(buf);
             break;
         
+        case Return:
+        case Unreachable:
         case Nop:
         case Drop:
         case End:

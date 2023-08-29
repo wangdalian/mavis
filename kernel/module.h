@@ -40,12 +40,17 @@ typedef struct {
 DEFINE_VECTOR(Locals);
 
 typedef enum {
-    Nop         = 0x1,
+    Unreachable = 0x00,
+    Nop         = 0x01,
+    Return      = 0x0f,
     I32Store    = 0x36,
     I32Const    = 0x41,
     LocalGet    = 0x20,
     LocalSet    = 0x21,
+    GlobalGet   = 0x23,
+    GlobalSet   = 0x24,
     I32Add      = 0x6a,
+    I32Sub      = 0x6b,
     I32Eqz      = 0x45,
     I32Lt_s     = 0x48,
     I32Ge_s     = 0x4e,
@@ -72,6 +77,15 @@ typedef struct {
 typedef struct {
     uint32_t    localIdx;
 } LocalSetInstr;
+
+typedef uint32_t globalidx;
+typedef struct {
+    globalidx idx;
+} global_get_instr;
+
+typedef struct {
+    globalidx idx;
+} global_set_instr;
 
 typedef struct {
     uint8_t     blockType;
@@ -106,6 +120,8 @@ typedef struct {
         I32StoreInstr   i32Store;
         LocalGetInstr   localGet;
         LocalSetInstr   localSet;
+        global_get_instr global_get;
+        global_set_instr global_set;
         IfInstr         If;
         BlockInstr      block;
         BrInstr         br;
