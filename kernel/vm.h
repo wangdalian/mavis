@@ -16,6 +16,11 @@ typedef struct {
 } LocalValue;
 
 typedef struct {
+    globaltype ty;
+    int32_t     val;
+} global_variable;
+
+typedef struct {
     list_elem_t link;
     FuncType    *ty;
     bool        imported;
@@ -31,6 +36,7 @@ typedef struct {
     Instr           *entry;
     list_t          call_stack;
     list_t          blocks;
+    global_variable **globals;
     WasmFunc        *funcs[];
 } Context;
 

@@ -175,10 +175,23 @@ typedef struct {
 } Data;
 DEFINE_VECTOR(Data);
 
+typedef uint8_t mut;
+typedef struct {
+    ValType     ty;
+    mut         m;
+} globaltype;
+
+typedef struct {
+    globaltype  ty;
+    list_t      expr;
+} global;
+DEFINE_VECTOR(global);
+
 #define TYPE_SECTION_ID         1
 #define IMPORT_SECTION_ID       2
 #define FUNC_SECTION_ID         3
 #define MEM_SECTION_ID          5
+#define GLOBAL_SECTION_ID       6
 #define EXPORT_SECTION_ID       7
 #define CODE_SECTION_ID         10
 #define DATA_SECTION_ID         11
@@ -191,6 +204,7 @@ typedef struct {
         Import_v    imports;        // importsec
         TypeIdx_v   typeIdxes;      // funcsec
         Mem_v       mems;           // memsec
+        global_v    globals;        // globalsec
         Export_v    exports;        // exportsec
         Code_v      codes;          // codesec
         Data_v      datas;          // datasec
@@ -206,6 +220,7 @@ typedef struct {
     Section     *importsec;
     Section     *funcsec;
     Section     *memsec;
+    Section     *globalsec;
     Section     *exportsec;
     Section     *codesec;
     Section     *datasec;

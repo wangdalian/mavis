@@ -1,4 +1,5 @@
 #include "module.h"
+#include "buffer.h"
 #include "memory.h"
 
 ValType * parseValType(Buffer *buf) {
@@ -357,6 +358,36 @@ Section * parseDataSection(Buffer *buf) {
     return sec;
 }
 
+global *parse_global(Buffer *buf) {
+    global *g = malloc(sizeof(global));
+    g->ty = (globaltype) {
+        .ty = readByte(buf),
+        .m  = readByte(buf)
+    };
+
+    LIST_INIT(&g->expr);
+    Instr *i;
+    do {
+        i = parseInstr(buf);
+        list_push_back(&g->expr, &i->link);
+    } while(i->op != End);
+
+    return g;
+}
+
+Section * parse_globalsec(Buffer *buf) {
+    uint32_t n = readU32_LEB128(buf);
+    Section *sec = malloc(sizeof(Section) + sizeof(global *) * n);
+    sec->id = GLOBAL_SECTION_ID;
+    sec->globals.n = n;
+
+    for(int i = 0; i < sec->globals.n; i++) {
+        sec->globals.x[i] = parse_global(buf);
+    }
+
+    return sec;
+}
+
 WasmModule * newWasmModule(Buffer *buf) {
     WasmModule *module = malloc(sizeof(WasmModule));
     *module = (WasmModule) {
@@ -365,42 +396,49 @@ WasmModule * newWasmModule(Buffer *buf) {
     };
 
     Section **sec = &module->typesec;
-    for(int i = 0; i < 6; i++)
+    for(int i = 0; i < 8; i++)
         sec[i] = NULL;
     
     // parse known sections
     while(!eof(buf)) {
         uint8_t id  = readByte(buf);
         uint32_t size = readU32_LEB128(buf);
+        Buffer *sec = readBuffer(buf, size);
 
         switch(id) {
             case TYPE_SECTION_ID:
-                module->typesec = parseTypeSection(buf);
+                module->typesec = parseTypeSection(sec);
                 break;
             
             case IMPORT_SECTION_ID:
-                module->importsec = parseImportSection(buf);
+                module->importsec = parseImportSection(sec);
                 break;
 
             case FUNC_SECTION_ID:
-                module->funcsec = parseFuncSection(buf);
+                module->funcsec = parseFuncSection(sec);
                 break;
 
             case MEM_SECTION_ID:
-                module->memsec = parseMemSection(buf);
+                module->memsec = parseMemSection(sec);
                 break;
-
+            
+            case GLOBAL_SECTION_ID:
+                module->globalsec = parse_globalsec(sec);
+                break;
+            
             case EXPORT_SECTION_ID:
-                module->exportsec = parseExportSection(buf);
+                module->exportsec = parseExportSection(sec);
                 break;
 
             case CODE_SECTION_ID:
-                module->codesec = parseCodeSection(buf);
+                module->codesec = parseCodeSection(sec);
                 break;
 
             case DATA_SECTION_ID:
-                module->datasec = parseDataSection(buf);
+                module->datasec = parseDataSection(sec);
                 break;
+
+            // ignore other sections
         }
     }
 

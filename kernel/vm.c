@@ -400,6 +400,26 @@ Context *createContext(WasmModule *m) {
     // init block
     LIST_INIT(&ctx->blocks);
 
+    // init global variables if globalsec is defined
+    if(m->globalsec) {
+        int num_globals = m->globalsec->globals.n;
+        global_variable **globals = malloc(sizeof(global_variable *) * num_globals);
+        for(int i = 0; i < num_globals; i++) {
+            global *g = m->globalsec->globals.x[i];
+            global_variable *v = malloc(sizeof(global_variable));
+            v->ty = g->ty;
+            
+            // calculate the initial value(constant expression expected)
+            Instr *ip = LIST_CONTAINER(list_head(&g->expr), Instr, link);
+            while(ip)
+                ip = invokeI(ctx, ip);
+                
+            v->val = readI32(ctx->stack);
+            globals[i] = v;
+        }
+        ctx->globals = globals;
+    }
+
     // create mem if memsec is defined
     if(m->memsec) {
         // allocate one page for now
