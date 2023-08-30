@@ -167,6 +167,9 @@ static void print_instr(instr *i) {
                 case I32Load:
                     op = "i32.load";
                     break;
+                case I32Load8_s:
+                    op = "i32.load8_s";
+                    break;
                 case I32Load8_u:
                     op = "i32.load8_u";
                     break;
@@ -455,6 +458,15 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             int32_t i = readi32(ctx->stack);
             int32_t ea = i + ip->memarg.offset;
             uint8_t c = loadbyte(ctx->mem, ea);
+            writei32(ctx->stack, c);
+            break;
+        }
+
+        case I32Load8_s: {
+            // memarg.align is ignored
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->memarg.offset;
+            int8_t c = loadbyte(ctx->mem, ea);
             writei32(ctx->stack, c);
             break;
         }
