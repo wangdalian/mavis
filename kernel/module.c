@@ -54,6 +54,7 @@ instr * parse_instr(struct buffer *buf) {
         
         case I32Store:
         case I32Store8:
+        case I32Load:
         case I32Load8_u:
             i->memarg = (memarg) {
                 .align  = readu32_LEB128(buf),
@@ -174,7 +175,7 @@ func * parse_func(struct buffer *buf) {
         list_push_back(
                 &f->expr, 
                 &parse_instr(buf)->link
-            );
+        );
     }
 
     return f;
@@ -441,7 +442,7 @@ module * new_module(struct buffer *buf) {
             case MEM_SECTION_ID:
                 m->memsec = parse_memsec(sec);
                 break;
-            
+
             case GLOBAL_SECTION_ID:
                 m->globalsec = parse_globalsec(sec);
                 break;

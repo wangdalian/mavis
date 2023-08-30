@@ -152,3 +152,10 @@ uint8_t loadbyte(struct buffer *buf, int32_t ea) {
     
     return (buf->p + ea)[0];
 }
+
+int32_t loadi32(struct buffer *buf, int32_t ea) {
+    if(ea + 4 > buf->len)
+        return 0;
+    
+    return *(int32_t *)(buf->p + ea);
+}

@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "arch.h"
 #include "buffer.h"
 #include "memory.h"
 #include "common.h"
@@ -153,6 +154,7 @@ static void print_instr(instr *i) {
             break;
         case I32Store:
         case I32Store8:
+        case I32Load:
         case I32Load8_u: {
             char *op;
             switch(i->op) {
@@ -161,6 +163,9 @@ static void print_instr(instr *i) {
                     break;
                 case I32Store8:
                     op = "i32.store8";
+                    break;
+                case I32Load:
+                    op = "i32.load";
                     break;
                 case I32Load8_u:
                     op = "i32.load8_u";
@@ -417,6 +422,14 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             break;
         }
 
+        case I32Load: {
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->memarg.offset;
+            int32_t c = loadbyte(ctx->mem, ea);
+            writei32(ctx->stack, c);
+            break;
+        }
+
         case I32Load8_u: {
             // memarg.align is ignored
             int32_t i = readi32(ctx->stack);
@@ -581,9 +594,6 @@ int32_t invoke_external(struct context *ctx, struct wasm_func *f) {
     if(strcmp(f->modName, "env") == 0) {
         if(strcmp(f->name, "env_exit") == 0) {
             env_exit(f->locals[0]->val);
-        }
-        if(strcmp(f->name, "env_puts") == 0) {
-            env_puts(f->locals[0]->val);
         }
     }
 
