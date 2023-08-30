@@ -112,8 +112,8 @@ typedef struct {
 
 
 typedef struct {
-    uint32_t    offset;
     uint32_t    align;
+    uint32_t    offset;
 } i32_store_instr;
 
 typedef struct {

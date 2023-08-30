@@ -40,7 +40,7 @@ typeidx * parse_typeidx(struct buffer *buf) {
     return typeidx;
 }
 
-instr * parseInstr(struct buffer *buf) {
+instr * parse_instr(struct buffer *buf) {
     instr *i = malloc(sizeof(instr));
 
     i->op = readbyte(buf);
@@ -54,8 +54,8 @@ instr * parseInstr(struct buffer *buf) {
         
         case I32Store:
             i->i32_store = (i32_store_instr) {
-                .offset = readu32_LEB128(buf),
-                .align  = readu32_LEB128(buf)
+                .align  = readu32_LEB128(buf),
+                .offset = readu32_LEB128(buf)
             };
             break;
         
@@ -96,14 +96,14 @@ instr * parseInstr(struct buffer *buf) {
             LIST_INIT(&i->If.in1);
             instr *j;
             do {
-                j = parseInstr(buf);
+                j = parse_instr(buf);
                 list_push_back(&i->If.in1, &j->link);
             } while(j->op != End && j->op != Else);
 
             if(i->op == Else) {
                 LIST_INIT(&i->If.in2);
                 do {
-                    j =  parseInstr(buf);
+                    j =  parse_instr(buf);
                     list_push_back(&i->If.in2, &j->link);
                 } while(j->op != End);
             }
@@ -116,7 +116,7 @@ instr * parseInstr(struct buffer *buf) {
             LIST_INIT(&i->block.in);
             instr *j;
             do {
-                j = parseInstr(buf);
+                j = parse_instr(buf);
                 list_push_back(&i->block.in, &j->link);
             } while(j->op != End);
             break;
@@ -168,7 +168,7 @@ func * parse_func(struct buffer *buf) {
     while(!eof(buf)) {
         list_push_back(
                 &f->expr, 
-                &parseInstr(buf)->link
+                &parse_instr(buf)->link
             );
     }
 
@@ -252,7 +252,7 @@ data * parse_data(struct buffer *buf) {
             LIST_INIT(&d->expr);
             instr *i;
             do {
-                i = parseInstr(buf);
+                i = parse_instr(buf);
                 list_push_back(&d->expr, &i->link);
             } while(i->op != End);
             
@@ -383,7 +383,7 @@ global *parse_global(struct buffer *buf) {
     LIST_INIT(&g->expr);
     instr *i;
     do {
-        i = parseInstr(buf);
+        i = parse_instr(buf);
         list_push_back(&g->expr, &i->link);
     } while(i->op != End);
 

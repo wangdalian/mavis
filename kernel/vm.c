@@ -151,8 +151,8 @@ static void print_instr(instr *i) {
         case I32Store:
             printf(
                 "i32.store %x %x\n", 
-                i->i32_store.offset, 
-                i->i32_store.align
+                i->i32_store.align,
+                i->i32_store.offset
             );
             break;
         case LocalGet:
@@ -351,14 +351,11 @@ instr *invoke_i(struct context *ctx, instr *ip) {
         }
 
         case I32Store: {
-            /*
-            memarg.offset of the t.store instruction is an exponent to the power of two: 2 for i32.store and 3 for i64.store.
-            In the specification, the offset is added to the value popped from the stack at runtime, 
-            However, in the current implementation, the offset is not used because the storeI32 function in buffer.c does the same thing.
-            */
-            int32_t val = readi32(ctx->stack);
-            int32_t offs = readi32(ctx->stack);
-            storei32(ctx->mem, offs, val);
+            // memarg.align is ignored
+            int32_t c = readi32(ctx->stack);
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->i32_store.offset;
+            storei32(ctx->mem, ea, c);
             break;
         }
 
@@ -461,7 +458,7 @@ struct context *create_context(module *m) {
                 
             v->val = readi32(ctx->stack);
             globals[i] = v;
-            //printf("[+] globals %d = %x\n", i, v->val);
+            printf("[+] globals %d = %x\n", i, v->val);
         }
         ctx->globals = globals;
     }

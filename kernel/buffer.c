@@ -137,10 +137,10 @@ uint8_t storebyte(struct buffer *buf, int32_t offs, uint8_t val) {
     return val;
 }
 
-int32_t storei32(struct buffer *buf, int32_t offs, int32_t val) {
-    if(offs + 4 > buf->len)
+int32_t storei32(struct buffer *buf, int32_t ea, int32_t val) {
+    if(ea + 4 > buf->len)
         return 0;
     
-    *(int32_t *)(buf->p + offs) = val;
+    *(int32_t *)(buf->p + ea) = val;
     return val;
 }
