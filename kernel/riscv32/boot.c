@@ -11,7 +11,11 @@ __attribute__((section(".text.boot")))
 __attribute__((naked))
 void boot(void) {
     __asm__ __volatile__(
+        // use physical address only
+        "csrw satp, zero\n"
+        // prepare kernel stack
         "mv sp, %[stack_top]\n"
+        // jumpt to kernel_main
         "j kernel_main\n"
         :
         : [stack_top] "r" (__stack_top)

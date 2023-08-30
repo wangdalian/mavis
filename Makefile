@@ -20,7 +20,7 @@ CFLAGS :=-std=c11 -O2 -g3 -Wall -Wextra --target=riscv32 -ffreestanding -nostdli
 TOP_DIR := $(shell pwd)
 CFLAGS += -I$(TOP_DIR)
 CFLAGS += -Ikernel/$(ARCH)/include
-QEMUFLAGS := -machine virt -bios default -nographic -serial mon:stdio --no-reboot
+QEMUFLAGS := -machine virt -bios none -nographic -serial mon:stdio --no-reboot
 
 # servers
 all_servers := $(notdir $(patsubst %/main.c, %, $(wildcard servers/*/main.c)))
