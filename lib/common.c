@@ -84,3 +84,7 @@ int printf(const char *fmt, ...) {
 
     return 0;
 }
+
+__attribute__((noreturn)) void exit(int32_t code) {
+    task_exit(code);
+}

@@ -1,11 +1,8 @@
 #include "vm.h"
 #include "arch.h"
-#include "buffer.h"
 #include "memory.h"
 #include "common.h"
-#include "env.h"
-#include "module.h"
-#include <stdint.h>
+#include "task.h"
 
 struct local_variable *create_local_variable(valtype ty) {
     struct local_variable *val = malloc(sizeof(struct local_variable));
@@ -517,7 +514,7 @@ instr *invoke_i(struct context *ctx, instr *ip) {
         case Unreachable:
             // exit current task
             puts("[!] unreachable!");
-            env_exit(0);
+            task_exit(0);
             break;
         
         default:
@@ -654,8 +651,8 @@ struct context *create_context(module *m) {
 int32_t invoke_external(struct context *ctx, struct wasm_func *f) {
     // import from another wasm binary is not supported yet
     if(strcmp(f->modName, "env") == 0) {
-        if(strcmp(f->name, "env_exit") == 0) {
-            env_exit(f->locals[0]->val);
+        if(strcmp(f->name, "task_exit") == 0) {
+            task_exit(f->locals[0]->val);
         }
         if(strcmp(f->name, "arch_serial_write") == 0) {
             arch_serial_write(f->locals[0]->val);

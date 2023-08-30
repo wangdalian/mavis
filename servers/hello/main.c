@@ -1,5 +1,4 @@
-#include <lib/common.h> 
-#include <lib/env.h>
+#include <lib/common.h>
 
 int main(void) {
     printf("Hello World!\n");
@@ -7,5 +6,5 @@ int main(void) {
 }
 
 void _start(void) {
-    env_exit(main());
+    exit(main());
 }
