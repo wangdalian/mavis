@@ -42,7 +42,7 @@ $(kernel_elf): LDFLAGS := -T$(linker_script)
 $(kernel_elf): $(objs) $(linker_script)
 	$(LD) $(LDFLAGS) -Map $(@:.elf=.map) -o $@ $(OBJS)
 
-$(arch_obj): $(addprefix $(BUILD_DIR)/kernel/$(ARCH)/, boot.o common.o task.o trap.o )
+$(arch_obj): $(addprefix $(BUILD_DIR)/kernel/$(ARCH)/, boot.o common.o task.o trap.o uart.o)
 	$(MKDIR) -p $(@D)
 	$(LD) -r -o $@ $^ 
 

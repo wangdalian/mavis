@@ -1,4 +1,5 @@
 #include "common.h"
+#include "arch.h"
 #include <stdarg.h>
 #include <stdint.h>
 
@@ -37,11 +38,18 @@ int strcmp(const char *s1, const char *s2) {
 }
 
 void putchar(char ch) {
-    arch_putchar(ch);
+    arch_serial_write(ch);
 }
 
 char getchar(void) {
-    return arch_getchar();
+    // wait for input
+    int c;
+    while(1) {
+        c = arch_serial_read();
+        if(c != -1) break;
+    }
+
+    return c;
 }
 
 void puts(const char *s) {
