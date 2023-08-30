@@ -262,8 +262,8 @@ instr *invoke_i(struct context *ctx, instr *ip) {
     // get current func
     struct wasm_func *func = LIST_CONTAINER(list_tail(&ctx->call_stack), struct wasm_func, link);
    
-    printf("[+] ip = ");
-    print_instr(ip);
+    //printf("[+] ip = ");
+    //print_instr(ip);
 
     switch(ip->op) {
         case I32Const:
@@ -435,7 +435,7 @@ instr *invoke_i(struct context *ctx, instr *ip) {
         case I32Load: {
             int32_t i = readi32(ctx->stack);
             int32_t ea = i + ip->memarg.offset;
-            int32_t c = loadbyte(ctx->mem, ea);
+            int32_t c = loadi32(ctx->mem, ea);
             writei32(ctx->stack, c);
             break;
         }
@@ -548,7 +548,7 @@ struct context *create_context(module *m) {
                 
             v->val = readi32(ctx->stack);
             globals[i] = v;
-            printf("[+] globals %d = %x\n", i, v->val);
+            //printf("[+] globals %d = %x\n", i, v->val);
         }
         ctx->globals = globals;
     }
@@ -609,7 +609,7 @@ int32_t invoke_external(struct context *ctx, struct wasm_func *f) {
             arch_serial_write(f->locals[0]->val);
         }
 
-        if(strcmp(f->name, "arch_serial_write") == 0) {
+        if(strcmp(f->name, "arch_serial_read") == 0) {
             return arch_serial_read();
         }
     }

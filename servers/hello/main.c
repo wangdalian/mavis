@@ -1,9 +1,8 @@
-#include <stdint.h>
-
-#include <lib/env.h> 
+#include <lib/common.h> 
+#include <lib/env.h>
 
 int main(void) {
-    env_puts("Hello World");
+    puts("Hello World");
     return 0;
 }
 
