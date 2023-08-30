@@ -2,6 +2,8 @@
 #include "memory.h"
 #include "common.h"
 #include "env.h"
+#include "module.h"
+#include <stdint.h>
 
 struct local_variable *create_local_variable(valtype ty) {
     struct local_variable *val = malloc(sizeof(struct local_variable));
@@ -148,9 +150,11 @@ static void print_instr(instr *i) {
         case I32Const:
             printf("i32.const %x\n", i->i32_const.n);
             break;
+        case I32Store8:
         case I32Store:
             printf(
-                "i32.store %x %x\n", 
+                "%s %x %x\n", 
+                i->op == I32Store? "i32.store" : "i32.store8",
                 i->i32_store.align,
                 i->i32_store.offset
             );
@@ -347,6 +351,15 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             int32_t cond = readi32(ctx->stack);
             if(cond)
                 next_ip = branch_in(ctx, ip->br.l);
+            break;
+        }
+
+        case I32Store8: {
+            // memarg.align is ignored
+            int32_t c = readi32(ctx->stack);
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->i32_store.offset;
+            storebyte(ctx->mem, ea, (uint8_t)c);
             break;
         }
 

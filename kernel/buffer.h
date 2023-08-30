@@ -24,7 +24,7 @@ uint8_t writebyte(struct buffer *buf, uint8_t val);
 uint32_t writeu32(struct buffer *buf, uint32_t val);
 int32_t writei32(struct buffer *buf, int32_t val);
 
-uint8_t storebyte(struct buffer *buf, int32_t offs, uint8_t val);
+uint8_t storebyte(struct buffer *buf, int32_t ea, uint8_t val);
 int32_t storei32(struct buffer *buf, int32_t ea, int32_t val);
 
 bool eof(struct buffer *buf);

@@ -129,11 +129,11 @@ int32_t writei32(struct buffer *buf, int32_t val) {
     return val;
 }
 
-uint8_t storebyte(struct buffer *buf, int32_t offs, uint8_t val) {
-    if(offs + 1 > buf->len)
+uint8_t storebyte(struct buffer *buf, int32_t ea, uint8_t val) {
+    if(ea + 1 > buf->len)
         return 0;
 
-    *(buf->p + offs) = val;
+    *(buf->p + ea) = val;
     return val;
 }
 

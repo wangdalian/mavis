@@ -44,6 +44,7 @@ typedef enum {
     Nop         = 0x01,
     Return      = 0x0f,
     I32Store    = 0x36,
+    I32Store8   = 0x3a,
     I32Const    = 0x41,
     LocalGet    = 0x20,
     LocalSet    = 0x21,
