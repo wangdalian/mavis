@@ -209,6 +209,9 @@ static void print_instr(instr *i) {
         case I32Sub:
             puts("i32.sub");
             break;
+        case I32Div_s:
+            puts("i32.div_s");
+            break;
         case I32Eq:
             puts("i32.eq");
             break;
@@ -308,6 +311,13 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             int32_t rhs = readi32(ctx->stack);
             int32_t lhs = readi32(ctx->stack);
             writei32(ctx->stack, lhs - rhs);
+            break;
+        }
+
+        case I32Div_s: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs / rhs);
             break;
         }
 
