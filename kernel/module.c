@@ -48,7 +48,7 @@ instr * parse_instr(struct buffer *buf) {
     switch(i->op) {
         case I32Const:
             i->i32_const = (i32_const_instr) {
-                .n = readu32_LEB128(buf)
+                .n = readi32_LEB128(buf)
             };
             break;
         

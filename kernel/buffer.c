@@ -126,7 +126,6 @@ int32_t writei32(struct buffer *buf, int32_t val) {
 
     buf->cursor -= 4;
     *(int32_t *)&buf->p[buf->cursor] = val;
-    buf->p[buf->cursor] = val;
     return val;
 }
 
