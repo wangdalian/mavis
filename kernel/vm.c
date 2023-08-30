@@ -186,6 +186,12 @@ static void print_instr(instr *i) {
         case GlobalSet:
             printf("global.set %x\n", i->global_set.idx);
             break;
+        case I32Shl:
+            puts("i32.shl");
+            break;
+        case I32Shr_s:
+            puts("i32.shr_s");
+            break;
         case I32Add:
             puts("i32.add");
             break;
@@ -257,6 +263,20 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             int32_t rhs = readi32(ctx->stack);
             int32_t lhs = readi32(ctx->stack);
             writei32(ctx->stack, lhs + rhs);
+            break;
+        }
+
+        case I32Shl: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs << rhs);
+            break;
+        }
+
+        case I32Shr_s: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs >> rhs);
             break;
         }
 

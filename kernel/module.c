@@ -85,6 +85,8 @@ instr * parse_instr(struct buffer *buf) {
             };
             break;
         
+        case I32Shl:
+        case I32Shr_s:
         case I32Add:
         case I32Sub:
         case I32Eqz:
