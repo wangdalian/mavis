@@ -111,11 +111,10 @@ typedef struct {
     funcidx    idx;
 } call_instr;
 
-
 typedef struct {
     uint32_t    align;
     uint32_t    offset;
-} i32_store_instr;
+} memarg;
 
 typedef struct {
     list_elem_t link;
@@ -123,7 +122,7 @@ typedef struct {
     uint8_t     op;
     union {
         i32_const_instr     i32_const;
-        i32_store_instr     i32_store;
+        memarg              memarg;
         local_get_instr     local_get;
         local_set_instr     local_set;
         global_get_instr    global_get;

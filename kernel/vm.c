@@ -155,8 +155,8 @@ static void print_instr(instr *i) {
             printf(
                 "%s %x %x\n", 
                 i->op == I32Store? "i32.store" : "i32.store8",
-                i->i32_store.align,
-                i->i32_store.offset
+                i->memarg.align,
+                i->memarg.offset
             );
             break;
         case LocalGet:
@@ -358,7 +358,7 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             // memarg.align is ignored
             int32_t c = readi32(ctx->stack);
             int32_t i = readi32(ctx->stack);
-            int32_t ea = i + ip->i32_store.offset;
+            int32_t ea = i + ip->memarg.offset;
             storebyte(ctx->mem, ea, (uint8_t)c);
             break;
         }
@@ -367,7 +367,7 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             // memarg.align is ignored
             int32_t c = readi32(ctx->stack);
             int32_t i = readi32(ctx->stack);
-            int32_t ea = i + ip->i32_store.offset;
+            int32_t ea = i + ip->memarg.offset;
             storei32(ctx->mem, ea, c);
             break;
         }

@@ -54,7 +54,7 @@ instr * parse_instr(struct buffer *buf) {
         
         case I32Store8:
         case I32Store:
-            i->i32_store = (i32_store_instr) {
+            i->memarg = (memarg) {
                 .align  = readu32_LEB128(buf),
                 .offset = readu32_LEB128(buf)
             };
