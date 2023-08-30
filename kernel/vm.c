@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "buffer.h"
 #include "memory.h"
 #include "common.h"
 #include "env.h"
@@ -150,15 +151,29 @@ static void print_instr(instr *i) {
         case I32Const:
             printf("i32.const %x\n", i->i32_const.n);
             break;
-        case I32Store8:
         case I32Store:
+        case I32Store8:
+        case I32Load8_u: {
+            char *op;
+            switch(i->op) {
+                case I32Store:
+                    op = "i32.store";
+                    break;
+                case I32Store8:
+                    op = "i32.store8";
+                    break;
+                case I32Load8_u:
+                    op = "i32.load8_u";
+                    break;
+            }
             printf(
                 "%s %x %x\n", 
-                i->op == I32Store? "i32.store" : "i32.store8",
+                op,
                 i->memarg.align,
                 i->memarg.offset
             );
             break;
+        }
         case LocalGet:
             printf("local.get %x\n", i->local_get.idx);
             break;
@@ -369,6 +384,15 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             int32_t i = readi32(ctx->stack);
             int32_t ea = i + ip->memarg.offset;
             storei32(ctx->mem, ea, c);
+            break;
+        }
+
+        case I32Load8_u: {
+            // memarg.align is ignored
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->memarg.offset;
+            uint8_t c = loadbyte(ctx->mem, ea);
+            writei32(ctx->stack, c);
             break;
         }
 

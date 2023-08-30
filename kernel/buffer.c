@@ -1,5 +1,6 @@
 #include "buffer.h"
 #include "memory.h"
+#include <stdint.h>
 
 struct buffer *newbuffer(uint8_t *p, int len) {
     struct buffer *buf = malloc(sizeof(struct buffer));
@@ -143,4 +144,11 @@ int32_t storei32(struct buffer *buf, int32_t ea, int32_t val) {
     
     *(int32_t *)(buf->p + ea) = val;
     return val;
+}
+
+uint8_t loadbyte(struct buffer *buf, int32_t ea) {
+    if(ea + 1 > buf->len)
+        return 0;
+    
+    return (buf->p + ea)[0];
 }

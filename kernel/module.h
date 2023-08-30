@@ -50,6 +50,7 @@ typedef enum {
     LocalSet    = 0x21,
     GlobalGet   = 0x23,
     GlobalSet   = 0x24,
+    I32Load8_u  = 0x2d,
     I32Add      = 0x6a,
     I32Sub      = 0x6b,
     I32Eqz      = 0x45,
