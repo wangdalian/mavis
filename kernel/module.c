@@ -91,6 +91,7 @@ instr * parse_instr(struct buffer *buf) {
         case I32Shr_s:
         case I32Add:
         case I32Sub:
+        case I32Eq:
         case I32Eqz:
         case I32Ne:
         case I32Lt_s:
@@ -144,6 +145,10 @@ instr * parse_instr(struct buffer *buf) {
         case Drop:
         case End:
             break;
+        
+        default:
+            printf("[-] unsupported instruction op = %x\n", i->op);
+            task_exit(0);
         
     }
 
