@@ -201,6 +201,9 @@ static void print_instr(instr *i) {
         case I32Eqz:
             puts("i32.eqz");
             break;
+        case I32Ne:
+            puts("i32.ne");
+            break;
         case I32Lt_s:
             puts("i32.lt_s");
             break;
@@ -312,6 +315,13 @@ instr *invoke_i(struct context *ctx, instr *ip) {
         case I32Eqz: {
             int32_t c = readi32(ctx->stack);
             writei32(ctx->stack, c == 0);
+            break;
+        }
+
+        case I32Ne: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs != rhs);
             break;
         }
 

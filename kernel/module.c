@@ -90,6 +90,7 @@ instr * parse_instr(struct buffer *buf) {
         case I32Add:
         case I32Sub:
         case I32Eqz:
+        case I32Ne:
         case I32Lt_s:
         case I32Ge_s:
         case I32Rem_s:
