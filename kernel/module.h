@@ -55,6 +55,7 @@ typedef enum {
     I32Load8_u  = 0x2d,
     I32Add      = 0x6a,
     I32Sub      = 0x6b,
+    I32Mul      = 0x6c,
     I32Div_s    = 0x6d,
     I32Eqz      = 0x45,
     I32Eq       = 0x46,
