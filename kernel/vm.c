@@ -191,6 +191,9 @@ static void print_instr(instr *i) {
         case GlobalSet:
             printf("global.set %x\n", i->global_set.idx);
             break;
+        case I32And:
+            puts("i32.and");
+            break;
         case I32Shl:
             puts("i32.shl");
             break;
@@ -271,6 +274,13 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             int32_t rhs = readi32(ctx->stack);
             int32_t lhs = readi32(ctx->stack);
             writei32(ctx->stack, lhs + rhs);
+            break;
+        }
+
+        case I32And: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs & rhs);
             break;
         }
 
@@ -594,6 +604,13 @@ int32_t invoke_external(struct context *ctx, struct wasm_func *f) {
     if(strcmp(f->modName, "env") == 0) {
         if(strcmp(f->name, "env_exit") == 0) {
             env_exit(f->locals[0]->val);
+        }
+        if(strcmp(f->name, "arch_serial_write") == 0) {
+            arch_serial_write(f->locals[0]->val);
+        }
+
+        if(strcmp(f->name, "arch_serial_write") == 0) {
+            return arch_serial_read();
         }
     }
 
