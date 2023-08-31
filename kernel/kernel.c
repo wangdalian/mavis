@@ -8,8 +8,8 @@
 
 extern char __bss[], __bss_end[], __stack_top[];
 
-extern uint8_t __hello_start[];
-extern int __hello_size[];
+extern uint8_t __hello_start[], __shell_start[];
+extern int __hello_size[], __shell_size[];
 
 void shell(void) {
      while (1) {
@@ -37,6 +37,13 @@ prompt:
             create_task((uint32_t)launch_vm_task, (uint32_t *)buf);
             yield();
         }
+        else if (strcmp(cmdline, "shell") == 0) {
+            // todo: fix this.
+            struct buffer *buf = newbuffer(__shell_start, __shell_size[0]);
+            create_task((uint32_t)launch_vm_task, (uint32_t *)buf);
+            yield();
+        }
+
         else if (strcmp(cmdline, "exit") == 0)
             task_exit(0);
         else
