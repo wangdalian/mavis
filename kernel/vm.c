@@ -2,6 +2,7 @@
 #include "arch.h"
 #include "memory.h"
 #include "common.h"
+#include "module.h"
 #include "task.h"
 
 struct local_variable *create_local_variable(valtype ty) {
@@ -90,6 +91,49 @@ void exit_frame(struct context *ctx) {
     list_pop_tail(&ctx->call_stack);
 }
 
+instr * end(struct context *ctx) {
+    // taget block
+    list_elem_t *block = list_tail(&ctx->blocks);
+
+    if(!block)
+        return NULL;
+
+    instr *i = LIST_CONTAINER(block, instr, link_block);
+
+    switch(i->op) {
+        case Call:
+            exit_block(ctx);
+            exit_frame(ctx);
+            return LIST_CONTAINER(
+                i->link.next,
+                instr,
+                link
+            );
+        
+        case If:
+            exit_block(ctx);
+            return LIST_CONTAINER(
+                i->link.next,
+                instr,
+                link
+            );
+        
+        // If the end instruction of the loop block is executed, the next instruction is returned.
+        case Block:
+        case Loop:
+            exit_block(ctx);
+            return LIST_CONTAINER(
+                i->link.next,
+                instr,
+                link
+            );
+
+        // unexpected block
+        default:
+            return NULL;
+    }
+}
+
 instr * branch_in(struct context *ctx, int idx) {
     if(list_tail(&ctx->blocks) == NULL) {
         return NULL;
@@ -107,27 +151,17 @@ instr * branch_in(struct context *ctx, int idx) {
     instr *i = LIST_CONTAINER(block, instr, link_block);
 
     switch(i->op) {
-        case Call:
-            exit_block(ctx);
-            exit_frame(ctx);
-            return LIST_CONTAINER(
-                i->link.next,
-                instr,
-                link
-            );
-        case If:
-            exit_block(ctx);
-            return LIST_CONTAINER(
-                i->link.next,
-                instr,
-                link
-            );
+
+        // todo: support if block?
+
+        // If the loop block is jumped to by a br or br_if instruction, the first instruction is returned.
         case Loop:
             return LIST_CONTAINER(
                 list_head(&i->block.in),
                 instr,
                 link
             );
+        
         case Block: {
             exit_block(ctx);
 
@@ -508,7 +542,7 @@ instr *invoke_i(struct context *ctx, instr *ip) {
         case Return:
         case End: 
         case Else:
-            next_ip =  branch_in(ctx, 0);
+            next_ip =  end(ctx);
             break;
 
         case Unreachable:
@@ -679,7 +713,7 @@ instr *invoke_f(struct context *ctx, struct wasm_func *f) {
         int32_t ret = invoke_external(ctx, f);
         if(f->ty->rt2->n)
             writei32(ctx->stack, ret);
-        return branch_in(ctx, 0);
+        return end(ctx);
     }
     else {
         return LIST_CONTAINER(list_head(f->codes), instr, link);
