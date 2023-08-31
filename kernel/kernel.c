@@ -32,11 +32,14 @@ prompt:
         }
 
         if (strcmp(cmdline, "hello") == 0) {
-            create_task((uint32_t)launch_vm_task, (uint32_t *)&disk[0]);
+            // todo: fix this
+            struct buffer file = disk[0];
+            create_task((uint32_t)launch_vm_task, (uint32_t *)&file);
             yield();
         }
         else if (strcmp(cmdline, "shell") == 0) {
-            create_task((uint32_t)launch_vm_task, (uint32_t *)&disk[1]);
+             struct buffer file = disk[1];
+            create_task((uint32_t)launch_vm_task, (uint32_t *)&file);
             yield();
         }
 
