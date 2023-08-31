@@ -4,29 +4,9 @@
 #include "task.h"
 
 extern uint8_t __pmalloc_pool_start[], __pmalloc_pool_end[];
-
-list_t free_pages = (list_t) {
-    .next   = &free_pages,
-    .prev   = &free_pages
-};
+static uint8_t *next_paddr = __pmalloc_pool_start;
 
 void *pmalloc(uint32_t n) {
-    static uint8_t *next_paddr = __pmalloc_pool_start;
-    
-    // Try to return from the free list first
-    struct page *page = LIST_CONTAINER(
-        list_tail(&free_pages),
-        struct page, 
-        link
-    );
-    list_pop_tail(&free_pages);
-
-    if(page) {
-        printf("[+] pmalloc %x\n", page);
-        return page;
-    }
-
-    // If it fails, cut from the memory pool
     uint8_t *paddr = next_paddr;
     next_paddr += n * PAGE_SIZE;
 
@@ -42,8 +22,7 @@ void *pmalloc(uint32_t n) {
 
 void pfree(void *page) {
     printf("[-] pfree %x\n", page);
-    // The top of the free page is no longer used, so it is used as a header.
-    list_push_back(&free_pages, &((struct page *)page)->link);
+    next_paddr = page;
 }
 
 extern struct task *current_task;

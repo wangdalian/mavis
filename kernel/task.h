@@ -18,7 +18,9 @@ struct task {
     int                 state;
     struct arch_task    arch;
     struct malloc_pool  malloc_pool;
-
+    
+    void                *page_top;
+    
     /*
     Used if vm_task. It is initialized by the launch_vm_task function.
     If launch fails, the "vm_task" needs to exit, so it must be initialized after the task has been executed.

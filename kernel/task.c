@@ -30,9 +30,10 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
     // In the current implementation, the top of the page is used as the header.
     LIST_INIT(&task->malloc_pool.pages);
     struct page *page = pmalloc(1);
+    task->page_top = page;
     list_push_back(&task->malloc_pool.pages, &page->link);
     task->malloc_pool.next_ptr = align_up(page->base, 0x10);
-
+   
     // init stack
     arch_task_init(task, ip, arg);
 
@@ -71,32 +72,8 @@ void yield(void) {
 
 __attribute__((noreturn))
 void task_exit(int32_t code) {
-    // If vm_task, free the memory that was being used.
-    if(current_task->ctx) {
-        struct context *ctx = current_task->ctx;
-        pfree(ctx->stack->p);
-        pfree(ctx->mem->p);
-    }
-
-    // free malloc_pool
-    for(;;) {
-        // LIST_FOR_EACH macro cannot be used because pfree breaks the list structure.
-        struct page *page = LIST_CONTAINER(
-            list_tail(&current_task->malloc_pool.pages),
-            struct page, 
-            link
-        );
-        list_pop_tail(&current_task->malloc_pool.pages);
-
-        if(!page)
-            break;
-        
-        pfree(page);
-    }
-    LIST_INIT(&current_task->malloc_pool.pages);
-
-    // free kernel stack
-    arch_task_exit(current_task);
+    // free memories
+    pfree(current_task->page_top);
     
     printf("task exited normally: tid = %x, code = %x\n", current_task->tid, code);
     current_task->state = TASK_EXITED;
