@@ -62,6 +62,7 @@ typedef enum {
     I32Ne       = 0x47,
     I32Lt_s     = 0x48,
     I32Gt_s     = 0x4a,
+    I32Gt_u     = 0x4b,
     I32Ge_s     = 0x4e,
     I32Rem_s    = 0x6f,
     I32And      = 0x71,

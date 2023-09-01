@@ -7,7 +7,7 @@ struct buffer disk[2] = {
     // todo: fix this
     [0] = {
         .cursor = 0,
-        .len    = 1932,
+        .len    = 2235,
         .p      = __hello_start
     },
 

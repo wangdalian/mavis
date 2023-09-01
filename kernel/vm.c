@@ -261,6 +261,9 @@ static void print_instr(instr *i) {
         case I32Gt_s:
             puts("i32.gt_s");
             break;
+        case I32Gt_u:
+            puts("i32.gt_u");
+            break;
         case I32Ge_s:
             puts("i32.ge_s");
             break;
@@ -383,6 +386,14 @@ instr *invoke_i(struct context *ctx, instr *ip) {
         case I32Gt_s: {
             int32_t rhs = readi32(ctx->stack);
             int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs > rhs);
+            break;
+        }
+
+        case I32Gt_u: {
+            // todo: impl readu32?
+            uint32_t rhs = readu32(ctx->stack);
+            uint32_t lhs = readu32(ctx->stack);
             writei32(ctx->stack, lhs > rhs);
             break;
         }

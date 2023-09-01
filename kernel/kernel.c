@@ -38,7 +38,7 @@ prompt:
             yield();
         }
         else if (strcmp(cmdline, "shell") == 0) {
-             struct buffer file = disk[1];
+            struct buffer file = disk[1];
             create_task((uint32_t)launch_vm_task, (uint32_t *)&file);
             yield();
         }
