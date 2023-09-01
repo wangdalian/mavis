@@ -8,8 +8,8 @@
 
 extern char __bss[], __bss_end[], __stack_top[];
 
-// defined in disk.c
-extern struct buffer disk[];
+extern char __hello_start[], __shell_start[];
+extern int __hello_size[], __shell_size[];
 
 void shell(void) {
      while (1) {
@@ -32,15 +32,10 @@ prompt:
         }
 
         if (strcmp(cmdline, "hello") == 0) {
-            // todo: fix this
-            struct buffer file = disk[0];
-            create_task((uint32_t)launch_vm_task, (uint32_t *)&file);
-            yield();
+            exec_vm_task(__hello_start, __hello_size[0]);
         }
         else if (strcmp(cmdline, "shell") == 0) {
-            struct buffer file = disk[1];
-            create_task((uint32_t)launch_vm_task, (uint32_t *)&file);
-            yield();
+            exec_vm_task(__shell_start, __shell_size[0]);
         }
 
         else if (strcmp(cmdline, "exit") == 0)

@@ -1,10 +1,12 @@
 #include "task.h"
 #include "arch.h"
+#include "buffer.h"
 #include "common.h"
 #include "memory.h"
 #include "module.h"
 #include "vm.h"
 #include "list.h"
+#include <stdint.h>
 
 static struct task tasks[NUM_TASK_MAX];
 struct task *current_task;
@@ -49,6 +51,13 @@ void launch_vm_task(struct buffer *buf) {
     module *m = new_module(buf);
     current_task->ctx = create_context(m);
     run_vm(current_task->ctx);
+}
+
+// create and run WASM task
+void exec_vm_task(void *image, int size) {
+    struct buffer *buf = newbuffer(image, size);
+    create_task((uint32_t)launch_vm_task, (uint32_t *)buf);
+    yield();
 }
 
 // todo: create shedule function
