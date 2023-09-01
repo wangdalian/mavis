@@ -145,6 +145,14 @@ int32_t storei32(struct buffer *buf, int32_t ea, int32_t val) {
     return val;
 }
 
+int64_t storei64(struct buffer *buf, int32_t ea, int64_t val) {
+    if(ea + 8 > buf->len)
+        return 0;
+    
+    *(int64_t *)(buf->p + ea) = val;
+    return val;
+}
+
 uint8_t loadbyte(struct buffer *buf, int32_t ea) {
     if(ea + 1 > buf->len)
         return 0;
@@ -157,4 +165,11 @@ int32_t loadi32(struct buffer *buf, int32_t ea) {
         return 0;
     
     return *(int32_t *)(buf->p + ea);
+}
+
+int64_t loadi64(struct buffer *buf, int32_t ea) {
+    if(ea + 8 > buf->len)
+        return 0;
+    
+    return *(int64_t *)(buf->p + ea);
 }

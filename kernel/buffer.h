@@ -26,7 +26,9 @@ int32_t writei32(struct buffer *buf, int32_t val);
 
 uint8_t storebyte(struct buffer *buf, int32_t ea, uint8_t val);
 int32_t storei32(struct buffer *buf, int32_t ea, int32_t val);
+int64_t storei64(struct buffer *buf, int32_t ea, int64_t val);
 uint8_t loadbyte(struct buffer *buf, int32_t ea);
 int32_t loadi32(struct buffer *buf, int32_t ea);
+int64_t loadi64(struct buffer *buf, int32_t ea);
 
 bool eof(struct buffer *buf);
