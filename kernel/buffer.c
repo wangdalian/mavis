@@ -51,6 +51,15 @@ int32_t readi32(struct buffer *buf) {
     return r;
 }
 
+int64_t readi64(struct buffer *buf) {
+    if(buf->cursor + 8 > buf->len)
+        return 0;
+    
+    int64_t r = *(int64_t *)&buf->p[buf->cursor];
+    buf->cursor += 8;
+    return r;
+}
+
 // LEB128(Little Endian Base 128)
 uint32_t readu32_LEB128(struct buffer *buf) {
     uint32_t result = 0, shift = 0;
@@ -126,6 +135,15 @@ int32_t writei32(struct buffer *buf, int32_t val) {
 
     buf->cursor -= 4;
     *(int32_t *)&buf->p[buf->cursor] = val;
+    return val;
+}
+
+int64_t writei64(struct buffer *buf, int64_t val) {
+    if(buf->cursor - 8 < 0)
+        return 0;
+
+    buf->cursor -= 8;
+    *(int64_t *)&buf->p[buf->cursor] = val;
     return val;
 }
 
