@@ -15,13 +15,13 @@ void *pmalloc(uint32_t n) {
 
     memset((void *)paddr, 0, n * PAGE_SIZE);
 
-    printf("[+] pmalloc %x\n", paddr);
+    //printf("[+] pmalloc %x\n", paddr);
 
     return paddr;    
 }
 
 void pfree(void *page) {
-    printf("[-] pfree %x\n", page);
+    //printf("[-] pfree %x\n", page);
     next_paddr = page;
 }
 
@@ -45,7 +45,7 @@ void *malloc(size_t size) {
         // extend memory
         struct page *new = pmalloc(1);
         
-        printf("[+] extend memory: new_page = %x\n", new);
+        //printf("[+] extend memory: new_page = %x\n", new);
 
         list_push_back(&current_pool->pages, &new->link);
 

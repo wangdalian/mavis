@@ -30,6 +30,5 @@ struct task {
 
 struct task *create_task(uint32_t ip, uint32_t *arg);
 void exec_vm_task(void *image, int size);
-void launch_vm_task(struct buffer *buf);
 void yield(void);
 void task_exit(int32_t code);

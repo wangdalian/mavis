@@ -26,7 +26,6 @@ void task_exit(int32_t code);
 
 __attribute__((
     __import_module__("env"),
-    __import_name__("task_exit"),
+    __import_name__("exec_vm_task"),
 ))
-__attribute__((noreturn))
 void exec_vm_task(void *image, int size);

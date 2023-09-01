@@ -725,10 +725,13 @@ int32_t invoke_external(struct context *ctx, struct wasm_func *f) {
         if(strcmp(f->name, "task_exit") == 0) {
             task_exit(f->locals[0]->val);
         }
+        if(strcmp(f->name, "exec_vm_task") == 0) {
+            // todo: fix this
+            exec_vm_task(ctx->mem->p + f->locals[0]->val, f->locals[1]->val);
+        }
         if(strcmp(f->name, "arch_serial_write") == 0) {
             arch_serial_write(f->locals[0]->val);
         }
-
         if(strcmp(f->name, "arch_serial_read") == 0) {
             return arch_serial_read();
         }

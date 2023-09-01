@@ -1,5 +1,9 @@
-#include <stdio.h>
-#include <string.h>
+#include <lib/stdio.h>
+#include <lib/string.h>
+#include <lib/env.h>
+
+extern char __hello_start[];
+extern int __hello_size[];
 
 int main(void) {
      while (1) {
@@ -21,7 +25,7 @@ int main(void) {
         }
         
         if (strcmp(cmdline, "hello") == 0) {
-            puts("hello");
+            exec_vm_task(__hello_start, __hello_size[0]);
         }
         else if (strcmp(cmdline, "exit") == 0)
             break;

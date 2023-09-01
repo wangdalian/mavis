@@ -10,20 +10,17 @@ QEMU := qemu-system-riscv32
 WAT2WASM := wat2wasm
 
 # build settings
+TOP_DIR := $(shell pwd)
 ARCH := riscv32
-BUILD_DIR ?= build
+BUILD_DIR ?= $(TOP_DIR)/build
 
 kernel_elf = $(BUILD_DIR)/kernel.elf
 
 # flags
 CFLAGS :=-std=c11 -O2 -g3 -Wall -Wextra --target=riscv32 -ffreestanding -nostdlib
-TOP_DIR := $(shell pwd)
 CFLAGS += -I$(TOP_DIR)
 CFLAGS += -Ikernel/$(ARCH)/include
 QEMUFLAGS := -machine virt -bios none -nographic -serial mon:stdio --no-reboot
-
-# servers
-all_servers := $(notdir $(patsubst %/main.c, %, $(wildcard servers/*/main.c)))
 
 .PHONY: build
 build: servers $(kernel_elf)
@@ -31,8 +28,8 @@ build: servers $(kernel_elf)
 arch_obj := $(BUILD_DIR)/kernel/$(ARCH).o
 
 # object files required to build the kernel
-objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o task.o memory.o disk.o) \
-		$(foreach s, $(all_servers), $(addprefix $(BUILD_DIR)/servers/$(s)/, main.o)) \
+objs := $(addprefix $(BUILD_DIR)/kernel/, kernel.o common.o buffer.o list.o module.o vm.o task.o memory.o) \
+		$(addprefix $(BUILD_DIR)/servers/shell/, main.o) \
 		$(arch_obj)
 
 # rules for building kernel
@@ -55,26 +52,22 @@ $(BUILD_DIR)/kernel/kernel.ld: kernel/kernel.ld
 	$(MKDIR) -p $(@D)
 	$(CP) $< $@
 
-# rulues for building servers
+# library used by servers
 lib := $(BUILD_DIR)/lib/lib.a
+$(lib):
+	build_dir=$(BUILD_DIR)/lib make -C lib
 
-define build_server
-	$(eval build_dir := $(BUILD_DIR)/servers/$(1))
-	$(eval src := servers/$(1)/main.c)
-	$(eval asm := servers/$(1)/main.S)
-	$(eval target := $(build_dir)/main.o)
-	$(MKDIR) -p $(build_dir)
-	$(WASI_SDK_CLANG) $(src) $(lib) -nostdlib -I$(TOP_DIR)/lib -o $(build_dir)/main.wasm
-	$(CC) -D__wasm_path__='"$(build_dir)/main.wasm"' --target=riscv32 -c -o $(target) $(asm)
+# rulues for building servers
+.PHONY: hello
+hello: $(lib)
+	build_dir=$(BUILD_DIR)/servers/hello lib=$(lib) include=$(TOP_DIR) make build -C servers/hello
 
-endef
+.PHONY: shell
+shell:	hello $(lib)
+	build_dir=$(BUILD_DIR)/servers/shell lib=$(lib) include=$(TOP_DIR) make build -C servers/shell
 
 .PHONY: servers
-servers: $(lib)
-	$(foreach s, $(all_servers), $(call build_server,$(s)))
-
-$(lib):
-	build_dir=$(TOP_DIR)/$(BUILD_DIR)/lib make -C lib
+servers: hello shell
 
 # run qemu
 .PHONY: run
