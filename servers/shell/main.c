@@ -1,4 +1,5 @@
-#include <lib/common.h>
+#include <stdio.h>
+#include <string.h>
 
 int main(void) {
      while (1) {
@@ -29,8 +30,4 @@ int main(void) {
     }
 
     return 0;
-}
-
-void _start(void) {
-    exit(main());
 }

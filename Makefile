@@ -56,21 +56,25 @@ $(BUILD_DIR)/kernel/kernel.ld: kernel/kernel.ld
 	$(CP) $< $@
 
 # rulues for building servers
+lib := $(BUILD_DIR)/lib/lib.a
+
 define build_server
 	$(eval build_dir := $(BUILD_DIR)/servers/$(1))
 	$(eval src := servers/$(1)/main.c)
-	$(eval libs := lib/common.c)
 	$(eval asm := servers/$(1)/main.S)
 	$(eval target := $(build_dir)/main.o)
 	$(MKDIR) -p $(build_dir)
-	$(WASI_SDK_CLANG) $(src) $(libs) -nostdlib -I$(TOP_DIR) -o $(build_dir)/main.wasm
+	$(WASI_SDK_CLANG) $(src) $(lib) -nostdlib -I$(TOP_DIR)/lib -o $(build_dir)/main.wasm
 	$(CC) -D__wasm_path__='"$(build_dir)/main.wasm"' --target=riscv32 -c -o $(target) $(asm)
 
 endef
 
 .PHONY: servers
-servers:
+servers: $(lib)
 	$(foreach s, $(all_servers), $(call build_server,$(s)))
+
+$(lib):
+	build_dir=$(TOP_DIR)/$(BUILD_DIR)/lib make -C lib
 
 # run qemu
 .PHONY: run

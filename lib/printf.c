@@ -1,29 +1,6 @@
-#include "common.h"
-#include "env.h"
 #include <stdarg.h>
 
-void putchar(char c) {
-    arch_serial_write(c);
-	return;
-}
-
-char getchar(void) {
-    // wait for input
-    int c;
-    while(1) {
-        c = arch_serial_read();
-        if(c != -1) break;
-    }
-
-    return c;
-}
-
-void puts(const char *s) {
-    while(*s) {
-        putchar(*s++);
-    }
-    putchar('\n');
-}
+void putchar(char c);
 
 // todo: return number of bytes written
 int printf(const char *fmt, ...) {
@@ -83,19 +60,4 @@ int printf(const char *fmt, ...) {
     va_end(vargs);
 
     return 0;
-}
-
-int strcmp(const char *s1, const char *s2) {
-    while(*s1 && *s2) {
-        if(*s1 != *s2)
-            break;
-        s1++;
-        s2++;
-    }
-    
-    return *s1 - *s2;
-}
-
-__attribute__((noreturn)) void exit(int32_t code) {
-    task_exit(code);
 }
