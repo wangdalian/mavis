@@ -7,12 +7,12 @@
 #include "buffer.h"
 #include "list.h"
 
-// support only i32 for now
 struct local_variable {
     uint8_t ty;
-    int32_t val;
+    int64_t val;
 };
 
+// support only i32 for now
 struct global_variable {
     globaltype  ty;
     int32_t     val;

@@ -4,6 +4,7 @@
 #include "common.h"
 #include "module.h"
 #include "task.h"
+#include <stdint.h>
 
 struct local_variable *create_local_variable(valtype ty) {
     struct local_variable *val = malloc(sizeof(struct local_variable));
@@ -184,19 +185,27 @@ static void print_instr(instr *i) {
             printf("i32.const %x\n", i->i32_const.n);
             break;
         case I32Store:
+        case I64Store:
         case I32Store8:
         case I32Load:
+        case I64Load:
         case I32Load8_u: {
             char *op;
             switch(i->op) {
                 case I32Store:
                     op = "i32.store";
                     break;
+                case I64Store:
+                    op = "i64.store";
+                    break;
                 case I32Store8:
                     op = "i32.store8";
                     break;
                 case I32Load:
                     op = "i32.load";
+                    break;
+                case I64Load:
+                    op = "i64.load";
                     break;
                 case I32Load8_s:
                     op = "i32.load8_s";
@@ -517,11 +526,28 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             break;
         }
 
+        case I64Store: {
+            // memarg.align is ignored
+            int64_t c = readi64(ctx->stack);
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->memarg.offset;
+            storei64(ctx->mem, ea, c);
+            break;
+        }
+
         case I32Load: {
             int32_t i = readi32(ctx->stack);
             int32_t ea = i + ip->memarg.offset;
             int32_t c = loadi32(ctx->mem, ea);
             writei32(ctx->stack, c);
+            break;
+        }
+
+        case I64Load: {
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->memarg.offset;
+            int64_t c = loadi64(ctx->mem, ea);
+            writei64(ctx->stack, c);
             break;
         }
 

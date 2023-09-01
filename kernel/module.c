@@ -53,8 +53,10 @@ instr * parse_instr(struct buffer *buf) {
             break;
         
         case I32Store:
+        case I64Store:
         case I32Store8:
         case I32Load:
+        case I64Load:
         case I32Load8_s:
         case I32Load8_u:
             i->memarg = (memarg) {
