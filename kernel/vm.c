@@ -181,37 +181,99 @@ instr * branch_in(struct context *ctx, int idx) {
 
 static void print_instr(instr *i) {
     switch(i->op) {
-        case I32Const:
-            printf("i32.const %x\n", i->i32_const.n);
+        case Unreachable:
+            puts("unreachable");
             break;
-        case I32Store:
-        case I64Store:
-        case I32Store8:
+        
+        case Nop:
+            puts("nop");
+            break;
+        
+        case Block:
+        case Loop:
+            printf("%s\n", i->op == Block? "block" : "loop");
+            break;
+        
+        case If:
+            printf("if %x\n", i->If.bt);
+            break;
+
+        case End:
+            puts("end");
+            break;
+        
+        case Br:
+        case BrIf:
+            printf(
+                "%s %x\n", 
+                i->op == Br? "br" : "br_if", 
+                i->br.l
+            );
+            break;
+
+        case Return:
+            puts("return");
+            break;
+        
+        case Call:
+            printf("call %x\n", i->call.idx);
+            break;
+        
+        case Drop:
+            puts("drop");
+            break;
+        
+        case LocalGet:
+            printf("local.get %x\n", i->local_get.idx);
+            break;
+        
+        case LocalSet:
+            printf("local.set %x\n", i->local_set.idx);
+            break;
+        
+        case GlobalGet:
+            printf("global.get %x\n", i->global_get.idx);
+            break;
+        
+        case GlobalSet:
+            printf("global.set %x\n", i->global_set.idx);
+            break;
+
         case I32Load:
         case I64Load:
-        case I32Load8_u: {
+        case I32Load8_s:
+        case I32Load8_u:
+        case I32Store:
+        case I64Store:
+        case I32Store8: {
             char *op;
             switch(i->op) {
-                case I32Store:
-                    op = "i32.store";
-                    break;
-                case I64Store:
-                    op = "i64.store";
-                    break;
-                case I32Store8:
-                    op = "i32.store8";
-                    break;
                 case I32Load:
                     op = "i32.load";
                     break;
+                
                 case I64Load:
                     op = "i64.load";
                     break;
+                
                 case I32Load8_s:
                     op = "i32.load8_s";
                     break;
+                
                 case I32Load8_u:
                     op = "i32.load8_u";
+                    break;
+                
+                case I32Store:
+                    op = "i32.store";
+                    break;
+                
+                case I64Store:
+                    op = "i64.store";
+                    break;
+                
+                case I32Store8:
+                    op = "i32.store8";
                     break;
             }
             printf(
@@ -222,92 +284,69 @@ static void print_instr(instr *i) {
             );
             break;
         }
-        case LocalGet:
-            printf("local.get %x\n", i->local_get.idx);
+
+        case I32Const:
+            printf("i32.const %x\n", i->i32_const.n);
             break;
-        case LocalSet:
-            printf("local.set %x\n", i->local_set.idx);
-            break;
-        case GlobalGet:
-            printf("global.get %x\n", i->global_get.idx);
-            break;
-        case GlobalSet:
-            printf("global.set %x\n", i->global_set.idx);
-            break;
-        case I32And:
-            puts("i32.and");
-            break;
-        case I32Shl:
-            puts("i32.shl");
-            break;
-        case I32Shr_s:
-            puts("i32.shr_s");
-            break;
-        case I32Add:
-            puts("i32.add");
-            break;
-        case I32Sub:
-            puts("i32.sub");
-            break;
-        case I32Div_s:
-            puts("i32.div_s");
-            break;
-        case I32Mul:
-            puts("i32.mul");
-            break;
-        case I32Eq:
-            puts("i32.eq");
-            break;
+        
         case I32Eqz:
             puts("i32.eqz");
             break;
+        
+        case I32Eq:
+            puts("i32.eq");
+            break;
+        
         case I32Ne:
             puts("i32.ne");
             break;
+
         case I32Lt_s:
             puts("i32.lt_s");
             break;
+       
         case I32Gt_s:
             puts("i32.gt_s");
             break;
+        
         case I32Gt_u:
             puts("i32.gt_u");
             break;
+        
         case I32Ge_s:
             puts("i32.ge_s");
             break;
+        
+        case I32Add:
+            puts("i32.add");
+            break;
+        
+        case I32Sub:
+            puts("i32.sub");
+            break;
+
+        case I32Mul:
+            puts("i32.mul");
+            break;
+
+        case I32Div_s:
+            puts("i32.div_s");
+            break;
+        
         case I32Rem_s:
             puts("i32.rem_s");
             break;
-        case If:
-            printf("if %x\n", i->If.bt);
+                
+        case I32And:
+            puts("i32.and");
             break;
-        case Block:
-        case Loop:
-            printf("%s\n", i->op == Block? "block" : "loop");
+
+        case I32Shl:
+            puts("i32.shl");
             break;
-        case Br:
-        case BrIf:
-            printf(
-                "%s %x\n", 
-                i->op == Br? "br" : "br_if", 
-                i->br.l
-            );
-            break;
-        case Return:
-            puts("return");
-            break;
-        case Unreachable:
-            puts("unreachable");
-            break;
-        case Call:
-            printf("call %x\n", i->call.idx);
-            break;
-        case Drop:
-            puts("drop");
-            break;
-        case End:
-            puts("end");
+        
+        case I32Shr_s:
+            puts("i32.shr_s");
             break;
     }   
 }
@@ -324,116 +363,73 @@ instr *invoke_i(struct context *ctx, instr *ip) {
     //print_instr(ip);
 
     switch(ip->op) {
-        case I32Const:
-            writei32(ctx->stack, ip->i32_const.n);
+        case Unreachable:
+            // exit current task
+            puts("[!] unreachable!");
+            task_exit(0);
             break;
         
-        case I32Add: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs + rhs);
+        case Nop:
+            break;
+        
+        case Block:
+        case Loop:
+            enter_block(ctx, ip);
+            next_ip = LIST_CONTAINER(
+                list_head(&ip->block.in),
+                instr,
+                link
+            );
+            break;
+        
+        case If: {
+            enter_block(ctx, ip);
+            int32_t cond = readi32(ctx->stack);
+            if(cond) {
+                next_ip = LIST_CONTAINER(
+                    list_head(&ip->If.in1),
+                    instr,
+                    link
+                );
+            } else {
+                next_ip = LIST_CONTAINER(
+                    list_head(&ip->If.in2),
+                    instr,
+                    link
+                );
+            }
             break;
         }
 
-        case I32And: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs & rhs);
+        case Else:
+        case End: 
+            next_ip =  end(ctx);
+            break;
+
+        case Br:
+            next_ip = branch_in(ctx, ip->br.l);
+            break;
+        
+        case BrIf: {
+            int32_t cond = readi32(ctx->stack);
+            if(cond)
+                next_ip = branch_in(ctx, ip->br.l);
             break;
         }
 
-        case I32Shl: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs << rhs);
+        case Return:
+            next_ip =  end(ctx);
             break;
-        }
-
-        case I32Shr_s: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs >> rhs);
+        
+        case Call:
+            enter_block(ctx, ip);
+            next_ip = invoke_f(ctx, ctx->funcs[ip->call.idx]);
             break;
-        }
 
-        case I32Sub: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs - rhs);
+        case Drop:
+            readi32(ctx->stack);
             break;
-        }
-
-        case I32Div_s: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs / rhs);
-            break;
-        }
-
-        case I32Mul: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs * rhs);
-            break;
-        }
-
-        case I32Rem_s: {
-            // todo: assert rhs != 0
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs % rhs);
-            break;
-        }
-
-        case I32Lt_s: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs < rhs);
-            break;
-        }
-
-        case I32Gt_s: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs > rhs);
-            break;
-        }
-
-        case I32Gt_u: {
-            // todo: impl readu32?
-            uint32_t rhs = readu32(ctx->stack);
-            uint32_t lhs = readu32(ctx->stack);
-            writei32(ctx->stack, lhs > rhs);
-            break;
-        }
-
-        case I32Ge_s: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs >= rhs);
-            break;
-        }
-
-        case I32Eqz: {
-            int32_t c = readi32(ctx->stack);
-            writei32(ctx->stack, c == 0);
-            break;
-        }
-
-        case I32Eq: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs == rhs);
-            break;
-        }
-
-        case I32Ne: {
-            int32_t rhs = readi32(ctx->stack);
-            int32_t lhs = readi32(ctx->stack);
-            writei32(ctx->stack, lhs != rhs);
-            break;
-        }
-
+        
         case LocalGet: {
             writei32(
                 ctx->stack, 
@@ -462,58 +458,37 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             break;
         }
 
-        case Call: {
-            enter_block(ctx, ip);
-            next_ip = invoke_f(ctx, ctx->funcs[ip->call.idx]);
-            break;
-        }
-
-        case If: {
-            enter_block(ctx, ip);
-            int32_t cond = readi32(ctx->stack);
-            if(cond) {
-                next_ip = LIST_CONTAINER(
-                    list_head(&ip->If.in1),
-                    instr,
-                    link
-                );
-            } else {
-                next_ip = LIST_CONTAINER(
-                    list_head(&ip->If.in2),
-                    instr,
-                    link
-                );
-            }
-            break;
-        }
-
-        case Block:
-        case Loop:
-            enter_block(ctx, ip);
-            next_ip = LIST_CONTAINER(
-                list_head(&ip->block.in),
-                instr,
-                link
-            );
-            break;
-
-        case Br:
-            next_ip = branch_in(ctx, ip->br.l);
-            break;
-        
-        case BrIf: {
-            int32_t cond = readi32(ctx->stack);
-            if(cond)
-                next_ip = branch_in(ctx, ip->br.l);
-            break;
-        }
-
-        case I32Store8: {
-            // memarg.align is ignored
-            int32_t c = readi32(ctx->stack);
+        case I32Load: {
             int32_t i = readi32(ctx->stack);
             int32_t ea = i + ip->memarg.offset;
-            storebyte(ctx->mem, ea, (uint8_t)c);
+            int32_t c = loadi32(ctx->mem, ea);
+            writei32(ctx->stack, c);
+            break;
+        }
+
+        case I64Load: {
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->memarg.offset;
+            int64_t c = loadi64(ctx->mem, ea);
+            writei64(ctx->stack, c);
+            break;
+        }
+
+        case I32Load8_s: {
+            // memarg.align is ignored
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->memarg.offset;
+            int8_t c = loadbyte(ctx->mem, ea);
+            writei32(ctx->stack, c);
+            break;
+        }
+
+        case I32Load8_u: {
+            // memarg.align is ignored
+            int32_t i = readi32(ctx->stack);
+            int32_t ea = i + ip->memarg.offset;
+            uint8_t c = loadbyte(ctx->mem, ea);
+            writei32(ctx->stack, c);
             break;
         }
 
@@ -535,58 +510,123 @@ instr *invoke_i(struct context *ctx, instr *ip) {
             break;
         }
 
-        case I32Load: {
-            int32_t i = readi32(ctx->stack);
-            int32_t ea = i + ip->memarg.offset;
-            int32_t c = loadi32(ctx->mem, ea);
-            writei32(ctx->stack, c);
-            break;
-        }
-
-        case I64Load: {
-            int32_t i = readi32(ctx->stack);
-            int32_t ea = i + ip->memarg.offset;
-            int64_t c = loadi64(ctx->mem, ea);
-            writei64(ctx->stack, c);
-            break;
-        }
-
-        case I32Load8_u: {
+        case I32Store8: {
             // memarg.align is ignored
+            int32_t c = readi32(ctx->stack);
             int32_t i = readi32(ctx->stack);
             int32_t ea = i + ip->memarg.offset;
-            uint8_t c = loadbyte(ctx->mem, ea);
-            writei32(ctx->stack, c);
+            storebyte(ctx->mem, ea, (uint8_t)c);
             break;
         }
 
-        case I32Load8_s: {
-            // memarg.align is ignored
-            int32_t i = readi32(ctx->stack);
-            int32_t ea = i + ip->memarg.offset;
-            int8_t c = loadbyte(ctx->mem, ea);
-            writei32(ctx->stack, c);
+        case I32Const:
+            writei32(ctx->stack, ip->i32_const.n);
+            break;
+
+        case I32Eqz: {
+            int32_t c = readi32(ctx->stack);
+            writei32(ctx->stack, c == 0);
             break;
         }
 
-        case Nop:
+        case I32Eq: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs == rhs);
             break;
+        }
 
-        case Drop:
-            readi32(ctx->stack);
+        case I32Ne: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs != rhs);
             break;
-        
-        case Return:
-        case End: 
-        case Else:
-            next_ip =  end(ctx);
-            break;
+        }
 
-        case Unreachable:
-            // exit current task
-            puts("[!] unreachable!");
-            task_exit(0);
+        case I32Lt_s: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs < rhs);
             break;
+        }
+
+        case I32Gt_s: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs > rhs);
+            break;
+        }
+
+        case I32Gt_u: {
+            uint32_t rhs = readu32(ctx->stack);
+            uint32_t lhs = readu32(ctx->stack);
+            writei32(ctx->stack, lhs > rhs);
+            break;
+        }
+
+        case I32Ge_s: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs >= rhs);
+            break;
+        }
+
+        case I32Add: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs + rhs);
+            break;
+        }
+
+        case I32Sub: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs - rhs);
+            break;
+        }
+
+        case I32Mul: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs * rhs);
+            break;
+        }
+
+        case I32Div_s: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs / rhs);
+            break;
+        }
+
+        case I32Rem_s: {
+            // todo: assert rhs != 0
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs % rhs);
+            break;
+        }
+
+        case I32And: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs & rhs);
+            break;
+        }
+
+        case I32Shl: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs << rhs);
+            break;
+        }
+
+        case I32Shr_s: {
+            int32_t rhs = readi32(ctx->stack);
+            int32_t lhs = readi32(ctx->stack);
+            writei32(ctx->stack, lhs >> rhs);
+            break;
+        }
         
         default:
             next_ip = NULL;

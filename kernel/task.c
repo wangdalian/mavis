@@ -25,9 +25,6 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
     if (!task)
         PANIC("no free process slots");
 
-    // init ctx
-    task->ctx = NULL;
-
     // init malloc_pool
     // In the current implementation, the top of the page is used as the header.
     LIST_INIT(&task->malloc_pool.pages);
@@ -49,8 +46,8 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
 // this is entry point of vm_task
 void launch_vm_task(struct buffer *buf) {
     module *m = new_module(buf);
-    current_task->ctx = create_context(m);
-    run_vm(current_task->ctx);
+    struct context *ctx = create_context(m);
+    run_vm(ctx);
 }
 
 // create and run WASM task

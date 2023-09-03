@@ -20,12 +20,6 @@ struct task {
     struct malloc_pool  malloc_pool;
     
     void                *page_top;
-    
-    /*
-    Used if vm_task. It is initialized by the launch_vm_task function.
-    If launch fails, the "vm_task" needs to exit, so it must be initialized after the task has been executed.
-    */
-    struct context      *ctx;
 };
 
 struct task *create_task(uint32_t ip, uint32_t *arg);

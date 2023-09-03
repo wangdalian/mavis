@@ -46,23 +46,57 @@ instr * parse_instr(struct buffer *buf) {
     i->op = readbyte(buf);
 
     switch(i->op) {
-        case I32Const:
-            i->i32_const = (i32_const_instr) {
-                .n = readi32_LEB128(buf)
-            };
+        case Unreachable:
+        case Nop:
             break;
         
-        case I32Store:
-        case I64Store:
-        case I32Store8:
-        case I32Load:
-        case I64Load:
-        case I32Load8_s:
-        case I32Load8_u:
-            i->memarg = (memarg) {
-                .align  = readu32_LEB128(buf),
-                .offset = readu32_LEB128(buf)
-            };
+        case Block:
+        case Loop: {
+            i->block.bt = readbyte(buf);
+            LIST_INIT(&i->block.in);
+            instr *j;
+            do {
+                j = parse_instr(buf);
+                list_push_back(&i->block.in, &j->link);
+            } while(j->op != End);
+            break;
+        }
+
+        case If: {
+            i->If.bt = readbyte(buf);
+            LIST_INIT(&i->If.in1);
+            instr *j;
+            do {
+                j = parse_instr(buf);
+                list_push_back(&i->If.in1, &j->link);
+            } while(j->op != End && j->op != Else);
+
+            if(i->op == Else) {
+                LIST_INIT(&i->If.in2);
+                do {
+                    j =  parse_instr(buf);
+                    list_push_back(&i->If.in2, &j->link);
+                } while(j->op != End);
+            }
+            break;
+        }
+
+        case End:
+            break;
+        
+        case Br:
+        case BrIf:
+            i->br.l = readu32_LEB128(buf);
+            break;
+        
+        case Return:
+            break;
+        
+        case Call:
+            i->call.idx = readu32_LEB128(buf);
+            break;
+        
+        case Drop:
             break;
         
         case LocalGet:
@@ -89,68 +123,40 @@ instr * parse_instr(struct buffer *buf) {
             };
             break;
         
-        case I32And:
-        case I32Shl:
-        case I32Shr_s:
-        case I32Add:
-        case I32Sub:
-        case I32Div_s:
-        case I32Mul:
-        case I32Eq:
+        case I32Load:
+        case I64Load:
+        case I32Load8_s:
+        case I32Load8_u:
+        case I32Store:
+        case I64Store:
+        case I32Store8:
+            i->memarg = (memarg) {
+                .align  = readu32_LEB128(buf),
+                .offset = readu32_LEB128(buf)
+            };
+            break;
+        
+        case I32Const:
+            i->i32_const = (i32_const_instr) {
+                .n = readi32_LEB128(buf)
+            };
+            break;
+        
         case I32Eqz:
+        case I32Eq:
         case I32Ne:
         case I32Lt_s:
         case I32Gt_s:
         case I32Gt_u:
         case I32Ge_s:
+        case I32Add:
+        case I32Sub:
+        case I32Mul:
+        case I32Div_s:
         case I32Rem_s:
-            break;
-        
-        case If: {
-            i->If.bt = readbyte(buf);
-            LIST_INIT(&i->If.in1);
-            instr *j;
-            do {
-                j = parse_instr(buf);
-                list_push_back(&i->If.in1, &j->link);
-            } while(j->op != End && j->op != Else);
-
-            if(i->op == Else) {
-                LIST_INIT(&i->If.in2);
-                do {
-                    j =  parse_instr(buf);
-                    list_push_back(&i->If.in2, &j->link);
-                } while(j->op != End);
-            }
-            break;
-        }
-
-        case Block:
-        case Loop: {
-            i->block.bt = readbyte(buf);
-            LIST_INIT(&i->block.in);
-            instr *j;
-            do {
-                j = parse_instr(buf);
-                list_push_back(&i->block.in, &j->link);
-            } while(j->op != End);
-            break;
-        }
-        
-        case Br:
-        case BrIf:
-            i->br.l = readu32_LEB128(buf);
-            break;
-        
-        case Call:
-            i->call.idx = readu32_LEB128(buf);
-            break;
-        
-        case Return:
-        case Unreachable:
-        case Nop:
-        case Drop:
-        case End:
+        case I32And:
+        case I32Shl:
+        case I32Shr_s:
             break;
         
         // unsupported instruction
