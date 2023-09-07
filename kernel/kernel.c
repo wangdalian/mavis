@@ -10,7 +10,8 @@ extern char __bss[], __bss_end[];
 extern char __shell_start[];
 extern int __shell_size[];
 
-extern struct task *current_task, *idle_task;
+extern struct task *current_task;
+
 void kernel_main(void) {
     memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
     
@@ -18,8 +19,7 @@ void kernel_main(void) {
 
     // create idle task(kernel_main itself)
     // this is the only task that is not WASM binary
-    idle_task = create_task(0, NULL);
-    idle_task->tid = -1;
+    struct task *idle_task = task_create(0, NULL);
     current_task = idle_task;
 
     // exec WASM shell

@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <arch_types.h>
+#include "list.h"
 #include "memory.h"
 #include "buffer.h"
 #include "vm.h"
@@ -20,9 +21,11 @@ struct task {
     struct malloc_pool  malloc_pool;
     
     void                *page_top;
+
+    list_elem_t         next;
 };
 
-struct task *create_task(uint32_t ip, uint32_t *arg);
+struct task *task_create(uint32_t ip, uint32_t *arg);
 void exec_vm_task(void *image, int size);
-void yield(void);
+void task_switch(void);
 void task_exit(int32_t code);

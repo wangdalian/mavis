@@ -9,14 +9,35 @@
 #include <stdint.h>
 
 static struct task tasks[NUM_TASK_MAX];
-struct task *current_task;
-struct task *idle_task;
+static list_t  runqueue = (list_t) {
+    .prev   = &runqueue,
+    .next   = &runqueue
+};
 
-struct task *create_task(uint32_t ip, uint32_t *arg) {
+void task_resume(struct task *task) {
+    task->state = TASK_RUNNABLE;
+    list_push_back(&runqueue, &task->next);
+}
+
+struct task *current_task;
+
+struct task *schedule(void) {
+    struct task *next = LIST_POP_TAIL(&runqueue, struct task, next);
+
+    if(next)
+        return next;
+
+    if(current_task->state == TASK_RUNNABLE)
+        return current_task;
+
+    __builtin_unreachable();
+}
+
+struct task *task_create(uint32_t ip, uint32_t *arg) {
     struct task *task = NULL;
     int i;
     for (i = 0; i < NUM_TASK_MAX; i++) {
-        if (tasks[i].state == TASK_UNUSED) {
+        if (tasks[i].state == TASK_UNUSED || tasks[i].state == TASK_EXITED) {
             task = &tasks[i];
             break;
         }
@@ -37,8 +58,9 @@ struct task *create_task(uint32_t ip, uint32_t *arg) {
     arch_task_init(task, ip, arg);
 
     task->tid = i + 1;
-    task->state = TASK_RUNNABLE;
-    
+
+    task_resume(task);
+
     return task;
 }
 
@@ -53,25 +75,21 @@ void launch_vm_task(struct buffer *buf) {
 // create and run WASM task
 void exec_vm_task(void *image, int size) {
     struct buffer *buf = newbuffer(image, size);
-    create_task((uint32_t)launch_vm_task, (uint32_t *)buf);
-    yield();
+    task_create((uint32_t)launch_vm_task, (uint32_t *)buf);
+    task_switch();
 }
 
-// todo: create shedule function
-void yield(void) {
-    struct task *next = idle_task;
-    for (int i = 0; i < NUM_TASK_MAX; i++) {
-        struct task *task = &tasks[(current_task->tid + i) % NUM_TASK_MAX];
-        if (task->state == TASK_RUNNABLE && task->tid > 0) {
-            next = task;
-            break;
-        }
-    }
-
-    if (next == current_task)
-        return;
-
+void task_switch(void) {
     struct task *prev = current_task;
+    struct task *next = schedule();
+    
+    if(prev == next)
+        return;
+    
+    // push back to runqueue
+    if(prev->state == TASK_RUNNABLE)
+        list_push_back(&runqueue, &prev->next);
+
     current_task = next;
     arch_task_switch(prev, next);
 }
@@ -83,7 +101,7 @@ void task_exit(int32_t code) {
     
     printf("task exited normally: tid = %x, code = %x\n", current_task->tid, code);
     current_task->state = TASK_EXITED;
-    yield();
+    task_switch();
     PANIC("unreachable");
     __builtin_unreachable();
 }
