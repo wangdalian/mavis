@@ -3,12 +3,14 @@
 #include "buffer.h"
 #include "common.h"
 #include "memory.h"
+#include "message.h"
 #include "module.h"
 #include "vm.h"
 #include "list.h"
+#include "ipc.h"
 #include <stdint.h>
 
-static struct task tasks[NUM_TASK_MAX];
+struct task tasks[NUM_TASK_MAX];
 static list_t  runqueue = (list_t) {
     .prev   = &runqueue,
     .next   = &runqueue
@@ -17,6 +19,10 @@ static list_t  runqueue = (list_t) {
 void task_resume(struct task *task) {
     task->state = TASK_RUNNABLE;
     list_push_back(&runqueue, &task->next);
+}
+
+void task_block(struct task *task) {
+    task->state = TASK_BLOCKED;
 }
 
 struct task *current_task;
@@ -37,7 +43,7 @@ struct task *task_create(uint32_t ip, uint32_t *arg) {
     struct task *task = NULL;
     int i;
     for (i = 0; i < NUM_TASK_MAX; i++) {
-        if (tasks[i].state == TASK_UNUSED || tasks[i].state == TASK_EXITED) {
+        if (tasks[i].state == TASK_UNUSED) {
             task = &tasks[i];
             break;
         }
@@ -45,6 +51,9 @@ struct task *task_create(uint32_t ip, uint32_t *arg) {
 
     if (!task)
         PANIC("no free process slots");
+    
+    // init message_box
+    task->message_box.has_message = false;
 
     // init malloc_pool
     // In the current implementation, the top of the page is used as the header.
@@ -72,23 +81,19 @@ void launch_vm_task(struct buffer *buf) {
     run_vm(ctx);
 }
 
-// create and run WASM task
-void exec_vm_task(void *image, int size) {
+void vm_create(void *image, int size) {
     struct buffer *buf = newbuffer(image, size);
     task_create((uint32_t)launch_vm_task, (uint32_t *)buf);
-    task_switch();
 }
 
 void task_switch(void) {
     struct task *prev = current_task;
     struct task *next = schedule();
-    
+
     if(prev == next)
         return;
     
-    // push back to runqueue
-    if(prev->state == TASK_RUNNABLE)
-        list_push_back(&runqueue, &prev->next);
+    //todo: push back to runqueue if not idle_task?
 
     current_task = next;
     arch_task_switch(prev, next);
@@ -98,10 +103,15 @@ __attribute__((noreturn))
 void task_exit(int32_t code) {
     // free memories
     pfree(current_task->page_top);
-    
-    printf("task exited normally: tid = %x, code = %x\n", current_task->tid, code);
-    current_task->state = TASK_EXITED;
-    task_switch();
+
+    // init state
+    current_task->state = TASK_UNUSED;
+
+    // send message to vm task
+    struct message msg = {.type = EXIT_TASK_MSG, .exit_task = {.tid = current_task->tid}};
+    ipc_send(3, &msg);
+
+    // never reach here
     PANIC("unreachable");
     __builtin_unreachable();
 }
