@@ -161,8 +161,8 @@ instr * parse_instr(struct buffer *buf) {
         
         // unsupported instruction
         default:
-            printf("[-] unsupported instruction op = %x\n", i->op);
-            task_exit(0);
+            // printf("[-] unsupported instruction op = %x\n", i->op);
+            // task_exit(0);
         
     }
 
